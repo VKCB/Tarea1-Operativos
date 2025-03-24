@@ -22,6 +22,15 @@ default rel
 	right_direction: equ 1
 	up_direction: equ 2
 	down_direction: equ 3
+    num_bots         EQU 3      ; Cantidad de bots en la carrera
+    velocidad_min    EQU 100    ; Límite inferior de velocidad
+    velocidad_max    EQU 150    ; Límite superior de velocidad
+
+       bots_pos_x       DW 10, 20, 30  ; Posiciones X de los bots (valores iniciales)
+    bots_pos_y       DW 5, 6, 7     ; Posiciones Y de los bots (valores iniciales)
+    bots_velocidad   DW 120, 130, 140  ; Velocidades fijas de cada bot (valores iniciales)
+    seed             DW 1234h      ; Semilla para aleatoriedad (valor fijo)
+
 
 
 
@@ -564,6 +573,84 @@ _start:
 		print clear, clear_length
 		
 		jmp exit
+
+
+
+start:
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; Inicializar los bots
+    CALL inicializar_bots
+
+    ; Bucle principal del juego
+main_loop:
+    CALL mover_bots  ; Mueve los bots en cada iteración
+    JMP main_loop
+
+    ; Terminar programa
+    MOV AX, 4C00h
+    INT 21h
+
+;-----------------------------------
+; Función: Inicializar Bots
+;-----------------------------------
+inicializar_bots PROC
+    MOV CX, num_bots
+    MOV SI, 0  ; Índice del bot
+
+bot_init_loop:
+    CALL generar_aleatorio
+    ADD DX, velocidad_min  ; Asegurar que esté en el rango [100,150]
+    CMP DX, velocidad_max
+    JBE store_speed
+    MOV DX, velocidad_max  ; Si es mayor, limitar a velocidad_max
+
+store_speed:
+    MOV bots_velocidad[SI], DX
+
+    ; Posición inicial (ejemplo en la línea de salida)
+    MOV bots_pos_x[SI], 50
+    MOV bots_pos_y[SI], 10
+    ADD SI, 2  ; Mover al siguiente bot
+    LOOP bot_init_loop
+    RET
+inicializar_bots ENDP
+
+;-----------------------------------
+; Función: Mover Bots
+;-----------------------------------
+mover_bots PROC
+    MOV CX, num_bots
+    MOV SI, 0
+
+bot_move_loop:
+    MOV AX, bots_pos_x[SI] 
+    ADD AX, bots_velocidad[SI] ; Simula avance en la pista
+    MOV bots_pos_x[SI], AX
+
+    ; Aquí puedes agregar lógica para curvas u obstáculos
+
+    ADD SI, 2
+    LOOP bot_move_loop
+    RET
+mover_bots ENDP
+
+;-----------------------------------
+; Función: Generar número aleatorio
+;-----------------------------------
+generar_aleatorio PROC
+    MOV AX, seed
+    MUL DX
+    ADD AX, 1234h
+    MOV DX, AX
+    MOV seed, AX
+    AND DX, 00FFh ; Tomar solo una parte para que no sea tan grande
+    RET
+generar_aleatorio ENDP
+
+END start
+
 
 
 start_screen: 

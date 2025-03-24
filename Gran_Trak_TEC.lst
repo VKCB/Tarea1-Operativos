@@ -161,539 +161,654 @@
    122                                  		db 0x0a, 0xD
    123                                  	%endmacro
    124                                  
-   125                                  		%macro marcador_j1 0			;Crea una línea completa de 'O' seguida de una nueva línea marcadores
-   126                                  		db "X PLAYER 1 TURNS: "
-   127                                  		times 60 db " "
-   128                                  		db "Time:"
-   129                                  		times 26 db " "
-   130                                  		db "X"
-   131                                  		db 0x0a, 0xD
-   132                                  	%endmacro
-   133                                  
-   134                                  	%macro marcador_j2 0			;Crea una línea completa de 'O' seguida de una nueva línea
-   135                                  		db "X PLAYER 2 TURNS: "
-   136                                  		times 91 db " "
+   125                                  	;Esta parte es para la creacion de la pista
+   126                                  
+   127                                  	%macro up_down_pista 0			;Parte de arriba de la pista
+   128                                  		db "X"
+   129                                  		times 9 db " "
+   130                                  		times 90 db "O"
+   131                                  		times 9 db " "
+   132                                  		db "X"
+   133                                  		db 0x0a, 0xD
+   134                                  	%endmacro
+   135                                  
+   136                                  	%macro right_pista1 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
    137                                  		db "X"
-   138                                  		db 0x0a, 0xD
-   139                                  	%endmacro
-   140                                  
-   141                                  	%macro hollow_line 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
-   142                                  		db "X"
-   143                                  		times column_cells-2 db char_space	;A 80 le resta las 2 X de los extremos e imprime 78 espacios
-   144                                  		db "X", 0x0a, 0xD
-   145                                  	%endmacro
-   146                                  
-   147                                  	%macro print 2				;Imprime una cadena especificada en la salida estándar
-   148                                  		mov eax, sys_write
-   149                                  		mov edi, 1 	; stdout
-   150                                  		mov rsi, %1				;Parametro 1 que se pasa en donde se llama al macro
-   151                                  		mov edx, %2				;Parametro 2
-   152                                  		syscall
-   153                                  	%endmacro
-   154                                  
-   155                                  	;Esta es la funcion que obtiene lo que uno ingrese
-   156                                  	%macro getchar 0			;Lee un solo carácter de la entrada estándar y lo almacena en input_char
-   157                                  		mov     rax, sys_read
-   158                                  		mov     rdi, STDIN_FILENO
-   159                                  		mov     rsi, input_char
-   160                                  		mov     rdx, 1 ; number of bytes
-   161                                  		syscall         ;read text input from keyboard
-   162                                  	%endmacro
-   163                                  
-   164                                  	%macro sleeptime 0			;Suspende la ejecución del programa durante el tiempo especificado
-   165                                  		mov eax, sys_nanosleep
-   166                                  		mov rdi, timespec
-   167                                  		xor esi, esi		; ignore remaining time in case of call interruption
-   168                                  		syscall			; sleep for tv_sec seconds + tv_nsec nanoseconds
-   169                                  	%endmacro
-   170                                  
-   171                                  global _start
-   172                                  
-   173                                  section .bss
-   174                                  
-   175 00000000 ??????????              	buffer resb 5  ; Buffer para almacenar los dígitos convertidos
+   138                                  		times 9 db " "
+   139                                  		db "O"
+   140                                  		times 88 db " "
+   141                                  		db "O"
+   142                                  		times 9 db " "
+   143                                  		db "X", 0x0a, 0xD
+   144                                  	%endmacro
+   145                                  
+   146                                  	%macro right_pista2 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+   147                                  		db "X"
+   148                                  		times 9 db " "
+   149                                  		db "O"
+   150                                  		times 70 db " "
+   151                                  		times 19 db "O"
+   152                                  		times 9 db " "
+   153                                  		db "X", 0x0a, 0xD
+   154                                  	%endmacro
+   155                                  
+   156                                  	%macro right_pista3 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+   157                                  		db "X"
+   158                                  		times 9 db " "
+   159                                  		db "O"
+   160                                  		times 70 db " "
+   161                                  		db "O"
+   162                                  		times 27 db " "
+   163                                  		db "X", 0x0a, 0xD
+   164                                  	%endmacro
+   165                                  
+   166                                  	%macro right_pista4 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+   167                                  		db "X"
+   168                                  		times 9 db " "
+   169                                  		db "O"
+   170                                  		times 70 db " "
+   171                                  		db "O"
+   172                                  		times 4 db " "
+   173                                  		times 23 db "O"
+   174                                  		db "X", 0x0a, 0xD
+   175                                  	%endmacro
    176                                  
-   177 00000005 ????????????????        	input_char: resq 1 
+   177                                  	; Fin de la creacion de la pista
    178                                  
-   179 0000000D ??                      	temp_char resb 1
-   180 0000000E ??                      	random resb 1 ;Numero random obtenido
-   181 0000000F ??                      	random2 resb 1
-   182                                  
-   183                                  section .data 
-   184                                  
-   185 00000000 2F6465762F7572616E-     	urandom db '/dev/urandom', 0
-   185 00000009 646F6D00           
-   186 0000000D 0A00                    	newline db 10, 0
+   179                                  	%macro marcador_j1 0			;Crea una línea completa de 'O' seguida de una nueva línea marcadores
+   180                                  		db "X PLAYER 1 TURNS: "
+   181                                  		times 60 db " "
+   182                                  		db "Time:"
+   183                                  		times 26 db " "
+   184                                  		db "X"
+   185                                  		db 0x0a, 0xD
+   186                                  	%endmacro
    187                                  
-   188 0000000F 0000000000000000        	score dq 0
-   189 00000017 [9204000000000000]      	score_position dq board + 19 + 10* (column_cells + 2)
-   190                                  
-   191                                  	board:
-   192                                  		full_line
+   188                                  	%macro marcador_j2 0			;Crea una línea completa de 'O' seguida de una nueva línea
+   189                                  		db "X PLAYER 2 TURNS: "
+   190                                  		times 91 db " "
+   191                                  		db "X"
+   192                                  		db 0x0a, 0xD
+   193                                  	%endmacro
+   194                                  
+   195                                  	%macro hollow_line 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+   196                                  		db "X"
+   197                                  		times column_cells-2 db char_space	;A 80 le resta las 2 X de los extremos e imprime 78 espacios
+   198                                  		db "X", 0x0a, 0xD
+   199                                  	%endmacro
+   200                                  
+   201                                  	%macro print 2				;Imprime una cadena especificada en la salida estándar
+   202                                  		mov eax, sys_write
+   203                                  		mov edi, 1 	; stdout
+   204                                  		mov rsi, %1				;Parametro 1 que se pasa en donde se llama al macro
+   205                                  		mov edx, %2				;Parametro 2
+   206                                  		syscall
+   207                                  	%endmacro
+   208                                  
+   209                                  	;Esta es la funcion que obtiene lo que uno ingrese
+   210                                  	%macro getchar 0			;Lee un solo carácter de la entrada estándar y lo almacena en input_char
+   211                                  		mov     rax, sys_read
+   212                                  		mov     rdi, STDIN_FILENO
+   213                                  		mov     rsi, input_char
+   214                                  		mov     rdx, 1 ; number of bytes
+   215                                  		syscall         ;read text input from keyboard
+   216                                  	%endmacro
+   217                                  
+   218                                  	%macro sleeptime 0			;Suspende la ejecución del programa durante el tiempo especificado
+   219                                  		mov eax, sys_nanosleep
+   220                                  		mov rdi, timespec
+   221                                  		xor esi, esi		; ignore remaining time in case of call interruption
+   222                                  		syscall			; sleep for tv_sec seconds + tv_nsec nanoseconds
+   223                                  	%endmacro
+   224                                  
+   225                                  global _start
+   226                                  
+   227                                  section .bss
+   228                                  
+   229 00000000 ??????????              	buffer resb 5  ; Buffer para almacenar los dígitos convertidos
+   230                                  
+   231 00000005 ????????????????        	input_char: resq 1 
+   232                                  
+   233 0000000D ??                      	temp_char resb 1
+   234 0000000E ??                      	random resb 1 ;Numero random obtenido
+   235 0000000F ??                      	random2 resb 1
+   236                                  
+   237                                  section .data 
+   238                                  
+   239 00000000 2F6465762F7572616E-     	urandom db '/dev/urandom', 0
+   239 00000009 646F6D00           
+   240 0000000D 0A00                    	newline db 10, 0
+   241                                  
+   242 0000000F 0000000000000000        	score dq 0
+   243 00000017 [9204000000000000]      	score_position dq board + 19 + 10* (column_cells + 2)
+   244                                  
+   245                                  	board:
+   246                                  		full_line
    121 0000001F 58<rep 6Eh>         <1>  times column_cells db "X"
    122 0000008D 0A0D                <1>  db 0x0a, 0xD
-   193                                  		marcador_j1
-   126 0000008F 5820504C4159455220- <1>  db "X PLAYER 1 TURNS: "
-   126 00000098 31205455524E533A20  <1>
-   127 000000A1 20<rep 3Ch>         <1>  times 60 db " "
-   128 000000DD 54696D653A          <1>  db "Time:"
-   129 000000E2 20<rep 1Ah>         <1>  times 26 db " "
-   130 000000FC 58                  <1>  db "X"
-   131 000000FD 0A0D                <1>  db 0x0a, 0xD
-   194                                  		marcador_j2 
-   135 000000FF 5820504C4159455220- <1>  db "X PLAYER 2 TURNS: "
-   135 00000108 32205455524E533A20  <1>
-   136 00000111 20<rep 5Bh>         <1>  times 91 db " "
-   137 0000016C 58                  <1>  db "X"
-   138 0000016D 0A0D                <1>  db 0x0a, 0xD
-   195                                  		full_line
+   247                                  		marcador_j1
+   180 0000008F 5820504C4159455220- <1>  db "X PLAYER 1 TURNS: "
+   180 00000098 31205455524E533A20  <1>
+   181 000000A1 20<rep 3Ch>         <1>  times 60 db " "
+   182 000000DD 54696D653A          <1>  db "Time:"
+   183 000000E2 20<rep 1Ah>         <1>  times 26 db " "
+   184 000000FC 58                  <1>  db "X"
+   185 000000FD 0A0D                <1>  db 0x0a, 0xD
+   248                                  		marcador_j2 
+   189 000000FF 5820504C4159455220- <1>  db "X PLAYER 2 TURNS: "
+   189 00000108 32205455524E533A20  <1>
+   190 00000111 20<rep 5Bh>         <1>  times 91 db " "
+   191 0000016C 58                  <1>  db "X"
+   192 0000016D 0A0D                <1>  db 0x0a, 0xD
+   249                                  		full_line
    121 0000016F 58<rep 6Eh>         <1>  times column_cells db "X"
    122 000001DD 0A0D                <1>  db 0x0a, 0xD
-   196                                          %rep 9  ; 3 = linea superior+linea inferior+linea de comandos 
-   197                                          hollow_line
-   198                                          %endrep 
-   197                              <1>  hollow_line
-   142 000001DF 58                  <2>  db "X"
-   143 000001E0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000024C 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 0000024F 58                  <2>  db "X"
-   143 00000250 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 000002BC 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 000002BF 58                  <2>  db "X"
-   143 000002C0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000032C 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 0000032F 58                  <2>  db "X"
-   143 00000330 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000039C 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 0000039F 58                  <2>  db "X"
-   143 000003A0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000040C 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 0000040F 58                  <2>  db "X"
-   143 00000410 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000047C 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 0000047F 58                  <2>  db "X"
-   143 00000480 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 000004EC 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 000004EF 58                  <2>  db "X"
-   143 000004F0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000055C 580A0D              <2>  db "X", 0x0a, 0xD
-   197                              <1>  hollow_line
-   142 0000055F 58                  <2>  db "X"
-   143 00000560 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 000005CC 580A0D              <2>  db "X", 0x0a, 0xD
-   199                                  
-   200                                  		%rep 9  ; 3 = linea superior+linea inferior+linea de comandos 
-   201                                          hollow_line
-   202                                          %endrep
-   201                              <1>  hollow_line
-   142 000005CF 58                  <2>  db "X"
-   143 000005D0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000063C 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 0000063F 58                  <2>  db "X"
-   143 00000640 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 000006AC 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 000006AF 58                  <2>  db "X"
-   143 000006B0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000071C 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 0000071F 58                  <2>  db "X"
-   143 00000720 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000078C 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 0000078F 58                  <2>  db "X"
-   143 00000790 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 000007FC 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 000007FF 58                  <2>  db "X"
-   143 00000800 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000086C 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 0000086F 58                  <2>  db "X"
-   143 00000870 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 000008DC 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 000008DF 58                  <2>  db "X"
-   143 000008E0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 0000094C 580A0D              <2>  db "X", 0x0a, 0xD
-   201                              <1>  hollow_line
-   142 0000094F 58                  <2>  db "X"
-   143 00000950 20<rep 6Ch>         <2>  times column_cells-2 db char_space
-   144 000009BC 580A0D              <2>  db "X", 0x0a, 0xD
-   203                                          full_line
-   121 000009BF 58<rep 6Eh>         <1>  times column_cells db "X"
-   122 00000A2D 0A0D                <1>  db 0x0a, 0xD
-   204                                  	board_size:   equ   $ - board
-   205                                  
-   206                                  	; Added for the terminal issue	
-   207 00000A2F 00<rep 24h>             		termios:        times 36 db 0	;Define una estructura de 36 bytes inicializados a 0. Esta estructura es utilizada para almacenar las configuraciones del terminal
-   208                                  		stdin:          equ 0			;Define el descriptor de archivo para la entrada estándar (stdin), que es 0
-   209                                  		ICANON:         equ 1<<1		;Canonico la entrada no se envía al programa hasta que el usuario presiona Enter
-   210                                  		ECHO:           equ 1<<3		;Bandera que habilita o deshabilita este modo
-   211                                  		VTIME: 			equ 5
-   212                                  		VMIN:			equ 6
-   213                                  		CC_C:			equ 18
-   214                                  
-   215                                  	;board: Es la dirección de inicio del tablero
-   216                                  	;40: Es el desplazamiento horizontal inicial desde el borde izquierdo del tablero.
-   217                                  	;29 * (column_cells + 2): Es el desplazamiento vertical. 20 indica la fila en la que se coloca la paleta, y column_cells + 2 es el número de caracteres por fila, incluyendo los caracteres de nueva línea 
-   218 00000A53 [D008000000000000]      	pallet_position dq board + 25 + 20 * (column_cells)
-   219 00000A5B 0300000000000000        	pallet_size dq 3
-   220                                  
-   221 00000A63 1E00000000000000        	pared1_x_pos: dq 30 ;0-59
-   222 00000A6B 0100000000000000        	pared1_y_pos: dq 1
-   223 00000A73 5000000000000000        	pared2_x_pos: dq 80 ;0-59
-   224 00000A7B 0100000000000000        	pared2_y_pos: dq 1
-   225 00000A83 1500000000000000        		colen: dq 21
-   226 00000A8B 0000000000000000        		colj: dq 0
-   227 00000A93 0000000000000000        		cole: dq 0
-   228 00000A9B 1500000000000000        		pared: dq 21
-   229 00000AA3 0000000000000000        		colplayer: dq 0 
-   230                                  
-   231                                  
-   232                                  
-   233                                  section .text
-   234                                  ;;;;;;;;;;;;;;;;;;;;for the working of the terminal;;;;;;;;;;;;;;;;;
-   235                                  canonical_off:										;La entrada se procese carácter por carácter sin esperar a que se presione Enter.
-   236 00000226 E86F000000                      call read_stdin_termios						;Guarda los atributos actuales del terminal en la variable termios
-   237                                  
-   238                                          ; clear canonical bit in local mode flags	
-   239 0000022B 50                              push rax						
-   240 0000022C B802000000                      mov eax, ICANON								;Carga el valor de la constante ICANON (que representa el bit del modo canónico) en eax
-   241 00000231 F7D0                            not eax										;Niega todos los bits en eax
-   242 00000233 2105(3B0A0000)                  and [termios+12], eax						;Limpia el bit canónico en las banderas de modo local
-   243 00000239 C605(460A0000)00        		mov byte[termios+CC_C+VTIME], 0				;Establecen VTIME y VMIN en 0 para que el terminal no espere caracteres adicionales
-   244 00000240 C605(470A0000)00        		mov byte[termios+CC_C+VMIN], 0
-   245 00000247 58                              pop rax
-   246                                  
-   247 00000248 E86C000000                      call write_stdin_termios					;Escribe los atributos modificados de termios de vuelta al terminal
-   248 0000024D C3                              ret
-   249                                  
-   250                                  echo_off:											;No se muestran los caracteres introducidos
-   251 0000024E E847000000                      call read_stdin_termios
-   252                                  
-   253                                          ; clear echo bit in local mode flags
-   254 00000253 50                              push rax
-   255 00000254 B808000000                      mov eax, ECHO
-   256 00000259 F7D0                            not eax
-   257 0000025B 2105(3B0A0000)                  and [termios+12], eax
-   258 00000261 58                              pop rax
-   259                                  
-   260 00000262 E852000000                      call write_stdin_termios
-   261 00000267 C3                              ret
+   250                                          %rep 3  ; 3 = linea superior+linea inferior+linea de comandos 
+   251                                          hollow_line
+   252                                          %endrep 
+   251                              <1>  hollow_line
+   196 000001DF 58                  <2>  db "X"
+   197 000001E0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
+   198 0000024C 580A0D              <2>  db "X", 0x0a, 0xD
+   251                              <1>  hollow_line
+   196 0000024F 58                  <2>  db "X"
+   197 00000250 20<rep 6Ch>         <2>  times column_cells-2 db char_space
+   198 000002BC 580A0D              <2>  db "X", 0x0a, 0xD
+   251                              <1>  hollow_line
+   196 000002BF 58                  <2>  db "X"
+   197 000002C0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
+   198 0000032C 580A0D              <2>  db "X", 0x0a, 0xD
+   253                                  
+   254                                  		up_down_pista
+   128 0000032F 58                  <1>  db "X"
+   129 00000330 20<rep 9h>          <1>  times 9 db " "
+   130 00000339 4F<rep 5Ah>         <1>  times 90 db "O"
+   131 00000393 20<rep 9h>          <1>  times 9 db " "
+   132 0000039C 58                  <1>  db "X"
+   133 0000039D 0A0D                <1>  db 0x0a, 0xD
+   255                                  
+   256                                  
+   257                                          right_pista2
+   147 0000039F 58                  <1>  db "X"
+   148 000003A0 20<rep 9h>          <1>  times 9 db " "
+   149 000003A9 4F                  <1>  db "O"
+   150 000003AA 20<rep 46h>         <1>  times 70 db " "
+   151 000003F0 4F<rep 13h>         <1>  times 19 db "O"
+   152 00000403 20<rep 9h>          <1>  times 9 db " "
+   153 0000040C 580A0D              <1>  db "X", 0x0a, 0xD
+   258                                  
+   259                                         %rep 2  ; 3 = linea superior+linea inferior+linea de comandos 
+   260                                          right_pista3
+   261                                          %endrep
+   260                              <1>  right_pista3
+   157 0000040F 58                  <2>  db "X"
+   158 00000410 20<rep 9h>          <2>  times 9 db " "
+   159 00000419 4F                  <2>  db "O"
+   160 0000041A 20<rep 46h>         <2>  times 70 db " "
+   161 00000460 4F                  <2>  db "O"
+   162 00000461 20<rep 1Bh>         <2>  times 27 db " "
+   163 0000047C 580A0D              <2>  db "X", 0x0a, 0xD
+   260                              <1>  right_pista3
+   157 0000047F 58                  <2>  db "X"
+   158 00000480 20<rep 9h>          <2>  times 9 db " "
+   159 00000489 4F                  <2>  db "O"
+   160 0000048A 20<rep 46h>         <2>  times 70 db " "
+   161 000004D0 4F                  <2>  db "O"
+   162 000004D1 20<rep 1Bh>         <2>  times 27 db " "
+   163 000004EC 580A0D              <2>  db "X", 0x0a, 0xD
    262                                  
-   263                                  canonical_on:										;La entrada se procesa en líneas completas. Espera hasta que el usuario presione Enter
-   264 00000268 E82D000000                      call read_stdin_termios
-   265                                  
-   266                                          ; set canonical bit in local mode flags
-   267 0000026D 830D(3B0A0000)02                or dword [termios+12], ICANON
-   268 00000274 C605(460A0000)00        		mov byte[termios+CC_C+VTIME], 0			;Tiempo en decisegundos que el terminal espera para la entrada.
-   269 0000027B C605(470A0000)01        		mov byte[termios+CC_C+VMIN], 1			;El número mínimo de caracteres que se deben leer
-   270 00000282 E832000000                      call write_stdin_termios
-   271 00000287 C3                              ret
+   263                                  		right_pista4
+   167 000004EF 58                  <1>  db "X"
+   168 000004F0 20<rep 9h>          <1>  times 9 db " "
+   169 000004F9 4F                  <1>  db "O"
+   170 000004FA 20<rep 46h>         <1>  times 70 db " "
+   171 00000540 4F                  <1>  db "O"
+   172 00000541 20<rep 4h>          <1>  times 4 db " "
+   173 00000545 4F<rep 17h>         <1>  times 23 db "O"
+   174 0000055C 580A0D              <1>  db "X", 0x0a, 0xD
+   264                                  		right_pista4
+   167 0000055F 58                  <1>  db "X"
+   168 00000560 20<rep 9h>          <1>  times 9 db " "
+   169 00000569 4F                  <1>  db "O"
+   170 0000056A 20<rep 46h>         <1>  times 70 db " "
+   171 000005B0 4F                  <1>  db "O"
+   172 000005B1 20<rep 4h>          <1>  times 4 db " "
+   173 000005B5 4F<rep 17h>         <1>  times 23 db "O"
+   174 000005CC 580A0D              <1>  db "X", 0x0a, 0xD
+   265                                  		right_pista4
+   167 000005CF 58                  <1>  db "X"
+   168 000005D0 20<rep 9h>          <1>  times 9 db " "
+   169 000005D9 4F                  <1>  db "O"
+   170 000005DA 20<rep 46h>         <1>  times 70 db " "
+   171 00000620 4F                  <1>  db "O"
+   172 00000621 20<rep 4h>          <1>  times 4 db " "
+   173 00000625 4F<rep 17h>         <1>  times 23 db "O"
+   174 0000063C 580A0D              <1>  db "X", 0x0a, 0xD
+   266                                  
+   267                                         %rep 2  ; 3 = linea superior+linea inferior+linea de comandos 
+   268                                          right_pista3
+   269                                          %endrep 
+   268                              <1>  right_pista3
+   157 0000063F 58                  <2>  db "X"
+   158 00000640 20<rep 9h>          <2>  times 9 db " "
+   159 00000649 4F                  <2>  db "O"
+   160 0000064A 20<rep 46h>         <2>  times 70 db " "
+   161 00000690 4F                  <2>  db "O"
+   162 00000691 20<rep 1Bh>         <2>  times 27 db " "
+   163 000006AC 580A0D              <2>  db "X", 0x0a, 0xD
+   268                              <1>  right_pista3
+   157 000006AF 58                  <2>  db "X"
+   158 000006B0 20<rep 9h>          <2>  times 9 db " "
+   159 000006B9 4F                  <2>  db "O"
+   160 000006BA 20<rep 46h>         <2>  times 70 db " "
+   161 00000700 4F                  <2>  db "O"
+   162 00000701 20<rep 1Bh>         <2>  times 27 db " "
+   163 0000071C 580A0D              <2>  db "X", 0x0a, 0xD
+   270                                  
+   271                                  		right_pista2
+   147 0000071F 58                  <1>  db "X"
+   148 00000720 20<rep 9h>          <1>  times 9 db " "
+   149 00000729 4F                  <1>  db "O"
+   150 0000072A 20<rep 46h>         <1>  times 70 db " "
+   151 00000770 4F<rep 13h>         <1>  times 19 db "O"
+   152 00000783 20<rep 9h>          <1>  times 9 db " "
+   153 0000078C 580A0D              <1>  db "X", 0x0a, 0xD
    272                                  
-   273                                  echo_on:											;Se muestran los caracteres introducidos
-   274 00000288 E80D000000                      call read_stdin_termios
+   273                                  
+   274                                  		up_down_pista
+   128 0000078F 58                  <1>  db "X"
+   129 00000790 20<rep 9h>          <1>  times 9 db " "
+   130 00000799 4F<rep 5Ah>         <1>  times 90 db "O"
+   131 000007F3 20<rep 9h>          <1>  times 9 db " "
+   132 000007FC 58                  <1>  db "X"
+   133 000007FD 0A0D                <1>  db 0x0a, 0xD
    275                                  
-   276                                          ; set echo bit in local mode flags
-   277 0000028D 830D(3B0A0000)08                or dword [termios+12], ECHO
-   278                                  
-   279 00000294 E820000000                      call write_stdin_termios
-   280 00000299 C3                              ret
-   281                                  
-   282                                  read_stdin_termios:									;Lee los atributos del terminal y los guarda en la variable termios
-   283 0000029A 50                              push rax
-   284 0000029B 53                              push rbx
-   285 0000029C 51                              push rcx
-   286 0000029D 52                              push rdx
-   287                                  
-   288 0000029E B836000000                      mov eax, 36h
-   289 000002A3 BB00000000                      mov ebx, stdin
-   290 000002A8 B901540000                      mov ecx, 5401h
-   291 000002AD BA[2F0A0000]                    mov edx, termios
-   292 000002B2 CD80                            int 80h
-   293                                  
-   294 000002B4 5A                              pop rdx
-   295 000002B5 59                              pop rcx
-   296 000002B6 5B                              pop rbx
-   297 000002B7 58                              pop rax
-   298 000002B8 C3                              ret
-   299                                  
-   300                                  write_stdin_termios:								;Escribe los atributos del terminal utilizando la llamada al sistema 
-   301 000002B9 50                              push rax
-   302 000002BA 53                              push rbx
-   303 000002BB 51                              push rcx
-   304 000002BC 52                              push rdx
-   305                                  
-   306 000002BD B836000000                      mov eax, 36h
-   307 000002C2 BB00000000                      mov ebx, stdin
-   308 000002C7 B902540000                      mov ecx, 5402h
-   309 000002CC BA[2F0A0000]                    mov edx, termios
-   310 000002D1 CD80                            int 80h
-   311                                  
-   312 000002D3 5A                              pop rdx
-   313 000002D4 59                              pop rcx
-   314 000002D5 5B                              pop rbx
-   315 000002D6 58                              pop rax
-   316 000002D7 C3                              ret
-   317                                  
-   318                                  ;;;;;;;;;;;;;;;;;;;;end for the working of the terminal;;;;;;;;;;;;
-   319                                  
-   320                                  ; Function: print_pallet
-   321                                  ; This function moves the pallet in the game
-   322                                  ; Arguments: none
-   323                                  ;
-   324                                  ; Return;
-   325                                  ;	void
-   326                                  print_pallet:
-   327                                    
-   328 000002D8 4C8B05(530A0000)        	mov r8, [pallet_position] 
-   329                                  	.write_pallet:
-   330 000002DF 41C600B0                		mov byte [r8], char_comillas
-   331                                  
-   332                                  	 
-   333 000002E3 C3                      	ret
-   334                                  
-   335                                  ; Function: move_pallet
-   336                                  ; This function is in charge of moving the pallet in a given direction
-   337                                  ; Arguments:
-   338                                  ;	rdi: left direction or right direction
-   339                                  ;
-   340                                  ; Return:
-   341                                  ;	void
-   342                                  move_pallet:
-   343                                  
-   344 000002E4 50                      	push rax
-   345 000002E5 51                      	push rcx
-   346                                  	  
-   347 000002E6 4883FF02                	cmp rdi, up_direction					; Comparar el valor de rdi (dirección) con left_direction
-   348 000002EA 7416                    	je .move_up						; Si no es igual a left_direction, saltar a .move_right
+   276                                  		%rep 3  ; 3 = linea superior+linea inferior+linea de comandos 
+   277                                          hollow_line
+   278                                          %endrep
+   277                              <1>  hollow_line
+   196 000007FF 58                  <2>  db "X"
+   197 00000800 20<rep 6Ch>         <2>  times column_cells-2 db char_space
+   198 0000086C 580A0D              <2>  db "X", 0x0a, 0xD
+   277                              <1>  hollow_line
+   196 0000086F 58                  <2>  db "X"
+   197 00000870 20<rep 6Ch>         <2>  times column_cells-2 db char_space
+   198 000008DC 580A0D              <2>  db "X", 0x0a, 0xD
+   277                              <1>  hollow_line
+   196 000008DF 58                  <2>  db "X"
+   197 000008E0 20<rep 6Ch>         <2>  times column_cells-2 db char_space
+   198 0000094C 580A0D              <2>  db "X", 0x0a, 0xD
+   279                                  
+   280                                          full_line
+   121 0000094F 58<rep 6Eh>         <1>  times column_cells db "X"
+   122 000009BD 0A0D                <1>  db 0x0a, 0xD
+   281                                  	board_size:   equ   $ - board
+   282                                  
+   283                                  	; Added for the terminal issue	
+   284 000009BF 00<rep 24h>             		termios:        times 36 db 0	;Define una estructura de 36 bytes inicializados a 0. Esta estructura es utilizada para almacenar las configuraciones del terminal
+   285                                  		stdin:          equ 0			;Define el descriptor de archivo para la entrada estándar (stdin), que es 0
+   286                                  		ICANON:         equ 1<<1		;Canonico la entrada no se envía al programa hasta que el usuario presiona Enter
+   287                                  		ECHO:           equ 1<<3		;Bandera que habilita o deshabilita este modo
+   288                                  		VTIME: 			equ 5
+   289                                  		VMIN:			equ 6
+   290                                  		CC_C:			equ 18
+   291                                  
+   292                                  	;board: Es la dirección de inicio del tablero
+   293                                  	;40: Es el desplazamiento horizontal inicial desde el borde izquierdo del tablero.
+   294                                  	;29 * (column_cells + 2): Es el desplazamiento vertical. 20 indica la fila en la que se coloca la paleta, y column_cells + 2 es el número de caracteres por fila, incluyendo los caracteres de nueva línea 
+   295 000009E3 [6705000000000000]      	pallet_position dq board + 20 + (12 * 111)
+   296 000009EB 0300000000000000        	pallet_size dq 3
+   297                                  
+   298 000009F3 1E00000000000000        	pared1_x_pos: dq 30 ;0-59
+   299 000009FB 0100000000000000        	pared1_y_pos: dq 1
+   300 00000A03 5000000000000000        	pared2_x_pos: dq 80 ;0-59
+   301 00000A0B 0100000000000000        	pared2_y_pos: dq 1
+   302 00000A13 1500000000000000        		colen: dq 21
+   303 00000A1B 0000000000000000        		colj: dq 0
+   304 00000A23 0000000000000000        		cole: dq 0
+   305 00000A2B 1500000000000000        		pared: dq 21
+   306 00000A33 0000000000000000        		colplayer: dq 0 
+   307                                  
+   308                                  
+   309                                  
+   310                                  section .text
+   311                                  ;;;;;;;;;;;;;;;;;;;;for the working of the terminal;;;;;;;;;;;;;;;;;
+   312                                  canonical_off:										;La entrada se procese carácter por carácter sin esperar a que se presione Enter.
+   313 00000226 E86F000000                      call read_stdin_termios						;Guarda los atributos actuales del terminal en la variable termios
+   314                                  
+   315                                          ; clear canonical bit in local mode flags	
+   316 0000022B 50                              push rax						
+   317 0000022C B802000000                      mov eax, ICANON								;Carga el valor de la constante ICANON (que representa el bit del modo canónico) en eax
+   318 00000231 F7D0                            not eax										;Niega todos los bits en eax
+   319 00000233 2105(CB090000)                  and [termios+12], eax						;Limpia el bit canónico en las banderas de modo local
+   320 00000239 C605(D6090000)00        		mov byte[termios+CC_C+VTIME], 0				;Establecen VTIME y VMIN en 0 para que el terminal no espere caracteres adicionales
+   321 00000240 C605(D7090000)00        		mov byte[termios+CC_C+VMIN], 0
+   322 00000247 58                              pop rax
+   323                                  
+   324 00000248 E86C000000                      call write_stdin_termios					;Escribe los atributos modificados de termios de vuelta al terminal
+   325 0000024D C3                              ret
+   326                                  
+   327                                  echo_off:											;No se muestran los caracteres introducidos
+   328 0000024E E847000000                      call read_stdin_termios
+   329                                  
+   330                                          ; clear echo bit in local mode flags
+   331 00000253 50                              push rax
+   332 00000254 B808000000                      mov eax, ECHO
+   333 00000259 F7D0                            not eax
+   334 0000025B 2105(CB090000)                  and [termios+12], eax
+   335 00000261 58                              pop rax
+   336                                  
+   337 00000262 E852000000                      call write_stdin_termios
+   338 00000267 C3                              ret
+   339                                  
+   340                                  canonical_on:										;La entrada se procesa en líneas completas. Espera hasta que el usuario presione Enter
+   341 00000268 E82D000000                      call read_stdin_termios
+   342                                  
+   343                                          ; set canonical bit in local mode flags
+   344 0000026D 830D(CB090000)02                or dword [termios+12], ICANON
+   345 00000274 C605(D6090000)00        		mov byte[termios+CC_C+VTIME], 0			;Tiempo en decisegundos que el terminal espera para la entrada.
+   346 0000027B C605(D7090000)01        		mov byte[termios+CC_C+VMIN], 1			;El número mínimo de caracteres que se deben leer
+   347 00000282 E832000000                      call write_stdin_termios
+   348 00000287 C3                              ret
    349                                  
-   350 000002EC 4883FF03                	cmp rdi, down_direction
-   351 000002F0 743C                    	je .move_down
+   350                                  echo_on:											;Se muestran los caracteres introducidos
+   351 00000288 E80D000000                      call read_stdin_termios
    352                                  
-   353 000002F2 4883FF01                	cmp rdi, right_direction
-   354 000002F6 0F8485000000            	je .move_right
+   353                                          ; set echo bit in local mode flags
+   354 0000028D 830D(CB090000)08                or dword [termios+12], ECHO
    355                                  
-   356 000002FC 4883FFFF                	cmp rdi, left_direction
-   357 00000300 7454                    	je .move_left
+   356 00000294 E820000000                      call write_stdin_termios
+   357 00000299 C3                              ret
    358                                  
-   359                                  	.move_up:
-   360 00000302 4C8B05(530A0000)        		mov r8, [pallet_position]
-   361 00000309 4981F840010000          		cmp r8, 320							; Verificar si está en la primera fila
-   362 00000310 0F8C8D000000            		jl .endp							; Si sí, no moverse más arriba
-   363                                  
-   364 00000316 4C8B0D(5B0A0000)        		mov r9, [pallet_size]
-   365 0000031D 41C60020                		mov byte [r8], char_space	; Limpiar último carácter del palet
-   366 00000321 4983E870                		sub r8, 112						; Mover una fila arriba (restar 320)
-   367 00000325 4C8905(530A0000)        		mov [pallet_position], r8			; Actualizar posición
-   368                                  
-   369 0000032C EB75                    		jmp .endp
+   359                                  read_stdin_termios:									;Lee los atributos del terminal y los guarda en la variable termios
+   360 0000029A 50                              push rax
+   361 0000029B 53                              push rbx
+   362 0000029C 51                              push rcx
+   363 0000029D 52                              push rdx
+   364                                  
+   365 0000029E B836000000                      mov eax, 36h
+   366 000002A3 BB00000000                      mov ebx, stdin
+   367 000002A8 B901540000                      mov ecx, 5401h
+   368 000002AD BA[BF090000]                    mov edx, termios
+   369 000002B2 CD80                            int 80h
    370                                  
-   371                                  	.move_down:
-   372                                  
-   373 0000032E 4C8B05(530A0000)        		mov r8, [pallet_position]
-   374 00000335 4981F840010000          		cmp r8, 320						; Verificar si está en la última fila (200 * 320)
-   375 0000033C 7C65                    		jl .endp							; Si sí, no moverse más abajo
+   371 000002B4 5A                              pop rdx
+   372 000002B5 59                              pop rcx
+   373 000002B6 5B                              pop rbx
+   374 000002B7 58                              pop rax
+   375 000002B8 C3                              ret
    376                                  
-   377 0000033E 4C8B0D(5B0A0000)        		mov r9, [pallet_size]
-   378 00000345 41C60020                		mov byte [r8], char_space	; Limpiar último carácter del palet
-   379 00000349 4983C070                		add r8, 112							; Mover una fila abajo (sumar 320)
-   380 0000034D 4C8905(530A0000)        		mov [pallet_position], r8			; Actualizar posición
-   381                                  
+   377                                  write_stdin_termios:								;Escribe los atributos del terminal utilizando la llamada al sistema 
+   378 000002B9 50                              push rax
+   379 000002BA 53                              push rbx
+   380 000002BB 51                              push rcx
+   381 000002BC 52                              push rdx
    382                                  
-   383 00000354 EB4D                    		jmp .endp	
-   384                                  
-   385                                  	.move_left:
-   386                                  
-   387 00000356 4C8B2D(8B0A0000)        		mov r13, [colj]
-   388 0000035D 4983FD01                		cmp r13, 1
-   389 00000361 7440                    		je .endp
-   390                                  
-   391 00000363 4C8B05(530A0000)        		mov r8, [pallet_position]
-   392 0000036A 4C8B0D(5B0A0000)        		mov r9, [pallet_size]
-   393 00000371 41C60020                		mov byte [r8], char_space	; Limpiar el último carácter del palet
-   394 00000375 49FFC8                  		dec r8								; Mover la posición del palet una unidad a la izquierda
-   395 00000378 4C8905(530A0000)        		mov [pallet_position], r8			; Actualizar la posición del palet en la memoria
+   383 000002BD B836000000                      mov eax, 36h
+   384 000002C2 BB00000000                      mov ebx, stdin
+   385 000002C7 B902540000                      mov ecx, 5402h
+   386 000002CC BA[BF090000]                    mov edx, termios
+   387 000002D1 CD80                            int 80h
+   388                                  
+   389 000002D3 5A                              pop rdx
+   390 000002D4 59                              pop rcx
+   391 000002D5 5B                              pop rbx
+   392 000002D6 58                              pop rax
+   393 000002D7 C3                              ret
+   394                                  
+   395                                  ;;;;;;;;;;;;;;;;;;;;end for the working of the terminal;;;;;;;;;;;;
    396                                  
-   397 0000037F EB22                    		jmp .endp	
-   398                                  							 
-   399                                  	.move_right:
-   400                                  
-   401 00000381 4C8B2D(8B0A0000)        		mov r13, [colj]
-   402 00000388 4983FD02                		cmp r13, 2
-   403 0000038C 7415                    		je .endp
-   404                                  
-   405 0000038E 4C8B05(530A0000)        		mov r8, [pallet_position]
-   406 00000395 41C60020                		mov byte [r8], char_space
-   407 00000399 49FFC0                  		inc r8
-   408 0000039C 4C8905(530A0000)        		mov [pallet_position], r8
-   409                                   
-   410                                  	.endp:
-   411 000003A3 48C705(8B0A0000)00-     		mov qword [colj], 0
-   411 000003AB 000000             
-   412                                  
-   413 000003AE 58                      	pop rax
-   414 000003AF 59                      	pop rcx
-   415                                  	 
-   416 000003B0 C3                      	ret
-   417                                  
-   418                                  _start: 
-   419                                  	print clear, clear_length
-   148 000003B1 B801000000          <1>  mov eax, sys_write
-   149 000003B6 BF01000000          <1>  mov edi, 1
-   150 000003BB 48BE-               <1>  mov rsi, %1
-   150 000003BD [2000000000000000]  <1>
-   151 000003C5 BA07000000          <1>  mov edx, %2
-   152 000003CA 0F05                <1>  syscall
-   420 000003CC E8E8000000              	call start_screen
-   421                                  	level_up:
-   422 000003D1 E850FEFFFF              	call canonical_off
+   397                                  ; Function: print_pallet
+   398                                  ; This function moves the pallet in the game
+   399                                  ; Arguments: none
+   400                                  ;
+   401                                  ; Return;
+   402                                  ;	void
+   403                                  print_pallet:
+   404                                    
+   405 000002D8 4C8B05(E3090000)        	mov r8, [pallet_position] 
+   406                                  	.write_pallet:
+   407 000002DF 41C600B0                		mov byte [r8], char_comillas
+   408                                  
+   409                                  	 
+   410 000002E3 C3                      	ret
+   411                                  
+   412                                  ; Function: move_pallet
+   413                                  ; This function is in charge of moving the pallet in a given direction
+   414                                  ; Arguments:
+   415                                  ;	rdi: left direction or right direction
+   416                                  ;
+   417                                  ; Return:
+   418                                  ;	void
+   419                                  move_pallet:
+   420                                  
+   421 000002E4 50                      	push rax
+   422 000002E5 51                      	push rcx
    423                                  
-   424                                   
-   425                                  	.main_loop:
-   426                                  
-   427                                  		;call rand_num
-   428 000003D6 E8FDFEFFFF              		call print_pallet 
-   429                                  		print board, board_size	 
-   148 000003DB B801000000          <1>  mov eax, sys_write
-   149 000003E0 BF01000000          <1>  mov edi, 1
-   150 000003E5 48BE-               <1>  mov rsi, %1
-   150 000003E7 [1F00000000000000]  <1>
-   151 000003EF BA100A0000          <1>  mov edx, %2
-   152 000003F4 0F05                <1>  syscall
+   424 000002E6 4C8B2D(1B0A0000)        	mov r13, [colj]
+   425 000002ED 4983FD01                	cmp r13, 1
+   426 000002F1 0F84BD000000            	je .endp
+   427                                  	  
+   428 000002F7 4883FF02                	cmp rdi, up_direction					; Comparar el valor de rdi (dirección) con left_direction
+   429 000002FB 7416                    	je .move_up						; Si no es igual a left_direction, saltar a .move_right
    430                                  
-   431                                  	
-   432                                  		
-   433                                  		;setnonblocking	
-   434                                  	.read_more:	
-   435                                  		getchar						;Llama a la macro getchar para leer un carácter de la entrada de teclado 
-   157 000003F6 B800000000          <1>  mov rax, sys_read
-   158 000003FB BF00000000          <1>  mov rdi, STDIN_FILENO
-   159 00000400 48BE-               <1>  mov rsi, input_char
-   159 00000402 [0500000000000000]  <1>
-   160 0000040A BA01000000          <1>  mov rdx, 1
-   161 0000040F 0F05                <1>  syscall
-   436                                  		
-   437 00000411 4883F801                		cmp rax, 1
-   438 00000415 7552                        	jne .done
-   439                                  		
-   440 00000417 8A05(05000000)          		mov al,[input_char]
-   441                                  
-   442                                  		.up_in:
-   443 0000041D 3C77                    			cmp al, 'w'
-   444 0000041F 750C                    			jne .down_in
-   445 00000421 BF02000000              			mov rdi, up_direction
-   446 00000426 E8B9FEFFFF              			call move_pallet
-   447 0000042B EB3C                    			jmp .done
-   448                                  
-   449                                  		.down_in:
-   450 0000042D 3C73                    			cmp al, 's'
-   451 0000042F 750C                    			jne .left_in
-   452 00000431 BF03000000              			mov rdi, down_direction
-   453 00000436 E8A9FEFFFF              			call move_pallet
-   454 0000043B EB2C                    			jmp .done
-   455                                  
-   456                                  		.left_in:
-   457 0000043D 3C61                    			cmp al, 'a'
-   458 0000043F 750E                    			jne .right_in
-   459 00000441 48C7C7FFFFFFFF          			mov rdi, left_direction
-   460 00000448 E897FEFFFF              			call move_pallet
-   461 0000044D EB1A                    			jmp .done
-   462                                  		
-   463                                  		.right_in:
-   464 0000044F 3C64                    		 	cmp al, 'd'
-   465 00000451 750C                    	    	jne .go_out
-   466 00000453 BF01000000              			mov rdi, right_direction
-   467 00000458 E887FEFFFF              			call move_pallet
-   468 0000045D EB0A                        		jmp .done	
-   469                                  
-   470                                  		.go_out:
+   431 000002FD 4883FF03                	cmp rdi, down_direction
+   432 00000301 743C                    	je .move_down
+   433                                  
+   434 00000303 4883FF01                	cmp rdi, right_direction
+   435 00000307 0F8485000000            	je .move_right
+   436                                  
+   437 0000030D 4883FFFF                	cmp rdi, left_direction
+   438 00000311 7454                    	je .move_left
+   439                                  
+   440                                  	.move_up:
+   441 00000313 4C8B05(E3090000)        		mov r8, [pallet_position]
+   442 0000031A 4981F840010000          		cmp r8, 320							; Verificar si está en la primera fila
+   443 00000321 0F8C8D000000            		jl .endp							; Si sí, no moverse más arriba
+   444                                  
+   445 00000327 4C8B0D(EB090000)        		mov r9, [pallet_size]
+   446 0000032E 41C60020                		mov byte [r8], char_space	; Limpiar último carácter del palet
+   447 00000332 4983E870                		sub r8, 112						; Mover una fila arriba (restar 320)
+   448 00000336 4C8905(E3090000)        		mov [pallet_position], r8			; Actualizar posición
+   449                                  
+   450 0000033D EB75                    		jmp .endp
+   451                                  
+   452                                  	.move_down:
+   453                                  
+   454 0000033F 4C8B05(E3090000)        		mov r8, [pallet_position]
+   455 00000346 4981F840010000          		cmp r8, 320						; Verificar si está en la última fila (200 * 320)
+   456 0000034D 7C65                    		jl .endp							; Si sí, no moverse más abajo
+   457                                  
+   458 0000034F 4C8B0D(EB090000)        		mov r9, [pallet_size]
+   459 00000356 41C60020                		mov byte [r8], char_space	; Limpiar último carácter del palet
+   460 0000035A 4983C070                		add r8, 112							; Mover una fila abajo (sumar 320)
+   461 0000035E 4C8905(E3090000)        		mov [pallet_position], r8			; Actualizar posición
+   462                                  
+   463                                  
+   464 00000365 EB4D                    		jmp .endp	
+   465                                  
+   466                                  	.move_left:
+   467                                  
+   468 00000367 4C8B2D(1B0A0000)        		mov r13, [colj]
+   469 0000036E 4983FD01                		cmp r13, 1
+   470 00000372 7440                    		je .endp
    471                                  
-   472 0000045F 3C71                        		cmp al, 'q'
-   473 00000461 0F84AE000000                		je exit
-   474                                  
-   475 00000467 EB8D                    			jmp .read_more
-   476                                  		
-   477                                  		.done:	
-   478                                  			;unsetnonblocking		
-   479                                  			sleeptime	
-   165 00000469 B823000000          <1>  mov eax, sys_nanosleep
-   166 0000046E 48BF-               <1>  mov rdi, timespec
-   166 00000470 [0000000000000000]  <1>
-   167 00000478 31F6                <1>  xor esi, esi
-   168 0000047A 0F05                <1>  syscall
-   480                                  			print clear, clear_length
-   148 0000047C B801000000          <1>  mov eax, sys_write
-   149 00000481 BF01000000          <1>  mov edi, 1
-   150 00000486 48BE-               <1>  mov rsi, %1
-   150 00000488 [2000000000000000]  <1>
-   151 00000490 BA07000000          <1>  mov edx, %2
-   152 00000495 0F05                <1>  syscall
-   481 00000497 E93AFFFFFF                  		jmp .main_loop 
-   482                                  
-   483                                  		print clear, clear_length
-   148 0000049C B801000000          <1>  mov eax, sys_write
-   149 000004A1 BF01000000          <1>  mov edi, 1
-   150 000004A6 48BE-               <1>  mov rsi, %1
-   150 000004A8 [2000000000000000]  <1>
-   151 000004B0 BA07000000          <1>  mov edx, %2
-   152 000004B5 0F05                <1>  syscall
-   484                                  		
-   485 000004B7 EB5C                    		jmp exit
-   486                                  
-   487                                  
-   488                                  start_screen: 
-   489                                  
-   490 000004B9 50                      	push rax
-   491 000004BA 51                      	push rcx
-   492 000004BB 52                      	push rdx
-   493 000004BC 57                      	push rdi
-   494 000004BD 56                      	push rsi
-   495                                  	
-   496                                  	print msg1, msg1_length	
-   148 000004BE B801000000          <1>  mov eax, sys_write
-   149 000004C3 BF01000000          <1>  mov edi, 1
-   150 000004C8 48BE-               <1>  mov rsi, %1
-   150 000004CA [3800000000000000]  <1>
-   151 000004D2 BAEE010000          <1>  mov edx, %2
-   152 000004D7 0F05                <1>  syscall
-   497                                  	getchar
-   157 000004D9 B800000000          <1>  mov rax, sys_read
-   158 000004DE BF00000000          <1>  mov rdi, STDIN_FILENO
-   159 000004E3 48BE-               <1>  mov rsi, input_char
-   159 000004E5 [0500000000000000]  <1>
-   160 000004ED BA01000000          <1>  mov rdx, 1
-   161 000004F2 0F05                <1>  syscall
-   498                                  	print clear, clear_length
-   148 000004F4 B801000000          <1>  mov eax, sys_write
-   149 000004F9 BF01000000          <1>  mov edi, 1
-   150 000004FE 48BE-               <1>  mov rsi, %1
-   150 00000500 [2000000000000000]  <1>
-   151 00000508 BA07000000          <1>  mov edx, %2
-   152 0000050D 0F05                <1>  syscall
-   499                                  
-   500 0000050F 58                      	pop rax
-   501 00000510 59                      	pop rcx
-   502 00000511 5A                      	pop rdx
-   503 00000512 5F                      	pop rdi
-   504 00000513 5E                      	pop rsi
-   505 00000514 C3                      	ret
-   506                                  
+   472 00000374 4C8B05(E3090000)        		mov r8, [pallet_position]
+   473 0000037B 4C8B0D(EB090000)        		mov r9, [pallet_size]
+   474 00000382 41C60020                		mov byte [r8], char_space	; Limpiar el último carácter del palet
+   475 00000386 49FFC8                  		dec r8								; Mover la posición del palet una unidad a la izquierda
+   476 00000389 4C8905(E3090000)        		mov [pallet_position], r8			; Actualizar la posición del palet en la memoria
+   477                                  
+   478 00000390 EB22                    		jmp .endp	
+   479                                  							 
+   480                                  	.move_right:
+   481                                  
+   482 00000392 4C8B2D(1B0A0000)        		mov r13, [colj]
+   483 00000399 4983FD02                		cmp r13, 2
+   484 0000039D 7415                    		je .endp
+   485                                  
+   486 0000039F 4C8B05(E3090000)        		mov r8, [pallet_position]
+   487 000003A6 41C60020                		mov byte [r8], char_space
+   488 000003AA 49FFC0                  		inc r8
+   489 000003AD 4C8905(E3090000)        		mov [pallet_position], r8
+   490                                   
+   491                                  	.endp:
+   492 000003B4 48C705(1B0A0000)00-     		mov qword [colj], 0
+   492 000003BC 000000             
+   493                                  
+   494 000003BF 58                      	pop rax
+   495 000003C0 59                      	pop rcx
+   496                                  	 
+   497 000003C1 C3                      	ret
+   498                                  
+   499                                  _start: 
+   500                                  	print clear, clear_length
+   202 000003C2 B801000000          <1>  mov eax, sys_write
+   203 000003C7 BF01000000          <1>  mov edi, 1
+   204 000003CC 48BE-               <1>  mov rsi, %1
+   204 000003CE [2000000000000000]  <1>
+   205 000003D6 BA07000000          <1>  mov edx, %2
+   206 000003DB 0F05                <1>  syscall
+   501 000003DD E8E8000000              	call start_screen
+   502                                  	level_up:
+   503 000003E2 E83FFEFFFF              	call canonical_off
+   504                                  
+   505                                   
+   506                                  	.main_loop:
    507                                  
-   508                                  
-   509                                  exit: 
-   510 00000515 E84EFDFFFF              	call canonical_on
-   511 0000051A B83C000000              	mov    rax, 60
-   512 0000051F BF00000000                  mov    rdi, 0
-   513 00000524 0F05                        syscall
-   514                                  
-   515                                  
+   508                                  		;call rand_num
+   509 000003E7 E8ECFEFFFF              		call print_pallet 
+   510                                  		print board, board_size	 
+   202 000003EC B801000000          <1>  mov eax, sys_write
+   203 000003F1 BF01000000          <1>  mov edi, 1
+   204 000003F6 48BE-               <1>  mov rsi, %1
+   204 000003F8 [1F00000000000000]  <1>
+   205 00000400 BAA0090000          <1>  mov edx, %2
+   206 00000405 0F05                <1>  syscall
+   511                                  
+   512                                  	
+   513                                  		
+   514                                  		;setnonblocking	
+   515                                  	.read_more:	
+   516                                  		getchar						;Llama a la macro getchar para leer un carácter de la entrada de teclado 
+   211 00000407 B800000000          <1>  mov rax, sys_read
+   212 0000040C BF00000000          <1>  mov rdi, STDIN_FILENO
+   213 00000411 48BE-               <1>  mov rsi, input_char
+   213 00000413 [0500000000000000]  <1>
+   214 0000041B BA01000000          <1>  mov rdx, 1
+   215 00000420 0F05                <1>  syscall
+   517                                  		
+   518 00000422 4883F801                		cmp rax, 1
+   519 00000426 7552                        	jne .done
+   520                                  		
+   521 00000428 8A05(05000000)          		mov al,[input_char]
+   522                                  
+   523                                  		.up_in:
+   524 0000042E 3C77                    			cmp al, 'w'
+   525 00000430 750C                    			jne .down_in
+   526 00000432 BF02000000              			mov rdi, up_direction
+   527 00000437 E8A8FEFFFF              			call move_pallet
+   528 0000043C EB3C                    			jmp .done
+   529                                  
+   530                                  		.down_in:
+   531 0000043E 3C73                    			cmp al, 's'
+   532 00000440 750C                    			jne .left_in
+   533 00000442 BF03000000              			mov rdi, down_direction
+   534 00000447 E898FEFFFF              			call move_pallet
+   535 0000044C EB2C                    			jmp .done
+   536                                  
+   537                                  		.left_in:
+   538 0000044E 3C61                    			cmp al, 'a'
+   539 00000450 750E                    			jne .right_in
+   540 00000452 48C7C7FFFFFFFF          			mov rdi, left_direction
+   541 00000459 E886FEFFFF              			call move_pallet
+   542 0000045E EB1A                    			jmp .done
+   543                                  		
+   544                                  		.right_in:
+   545 00000460 3C64                    		 	cmp al, 'd'
+   546 00000462 750C                    	    	jne .go_out
+   547 00000464 BF01000000              			mov rdi, right_direction
+   548 00000469 E876FEFFFF              			call move_pallet
+   549 0000046E EB0A                        		jmp .done	
+   550                                  
+   551                                  		.go_out:
+   552                                  
+   553 00000470 3C71                        		cmp al, 'q'
+   554 00000472 0F84AE000000                		je exit
+   555                                  
+   556 00000478 EB8D                    			jmp .read_more
+   557                                  		
+   558                                  		.done:	
+   559                                  			;unsetnonblocking		
+   560                                  			sleeptime	
+   219 0000047A B823000000          <1>  mov eax, sys_nanosleep
+   220 0000047F 48BF-               <1>  mov rdi, timespec
+   220 00000481 [0000000000000000]  <1>
+   221 00000489 31F6                <1>  xor esi, esi
+   222 0000048B 0F05                <1>  syscall
+   561                                  			print clear, clear_length
+   202 0000048D B801000000          <1>  mov eax, sys_write
+   203 00000492 BF01000000          <1>  mov edi, 1
+   204 00000497 48BE-               <1>  mov rsi, %1
+   204 00000499 [2000000000000000]  <1>
+   205 000004A1 BA07000000          <1>  mov edx, %2
+   206 000004A6 0F05                <1>  syscall
+   562 000004A8 E93AFFFFFF                  		jmp .main_loop 
+   563                                  
+   564                                  		print clear, clear_length
+   202 000004AD B801000000          <1>  mov eax, sys_write
+   203 000004B2 BF01000000          <1>  mov edi, 1
+   204 000004B7 48BE-               <1>  mov rsi, %1
+   204 000004B9 [2000000000000000]  <1>
+   205 000004C1 BA07000000          <1>  mov edx, %2
+   206 000004C6 0F05                <1>  syscall
+   565                                  		
+   566 000004C8 EB5C                    		jmp exit
+   567                                  
+   568                                  
+   569                                  start_screen: 
+   570                                  
+   571 000004CA 50                      	push rax
+   572 000004CB 51                      	push rcx
+   573 000004CC 52                      	push rdx
+   574 000004CD 57                      	push rdi
+   575 000004CE 56                      	push rsi
+   576                                  	
+   577                                  	print msg1, msg1_length	
+   202 000004CF B801000000          <1>  mov eax, sys_write
+   203 000004D4 BF01000000          <1>  mov edi, 1
+   204 000004D9 48BE-               <1>  mov rsi, %1
+   204 000004DB [3800000000000000]  <1>
+   205 000004E3 BAEE010000          <1>  mov edx, %2
+   206 000004E8 0F05                <1>  syscall
+   578                                  	getchar
+   211 000004EA B800000000          <1>  mov rax, sys_read
+   212 000004EF BF00000000          <1>  mov rdi, STDIN_FILENO
+   213 000004F4 48BE-               <1>  mov rsi, input_char
+   213 000004F6 [0500000000000000]  <1>
+   214 000004FE BA01000000          <1>  mov rdx, 1
+   215 00000503 0F05                <1>  syscall
+   579                                  	print clear, clear_length
+   202 00000505 B801000000          <1>  mov eax, sys_write
+   203 0000050A BF01000000          <1>  mov edi, 1
+   204 0000050F 48BE-               <1>  mov rsi, %1
+   204 00000511 [2000000000000000]  <1>
+   205 00000519 BA07000000          <1>  mov edx, %2
+   206 0000051E 0F05                <1>  syscall
+   580                                  
+   581 00000520 58                      	pop rax
+   582 00000521 59                      	pop rcx
+   583 00000522 5A                      	pop rdx
+   584 00000523 5F                      	pop rdi
+   585 00000524 5E                      	pop rsi
+   586 00000525 C3                      	ret
+   587                                  
+   588                                  
+   589                                  
+   590                                  exit: 
+   591 00000526 E83DFDFFFF              	call canonical_on
+   592 0000052B B83C000000              	mov    rax, 60
+   593 00000530 BF00000000                  mov    rdi, 0
+   594 00000535 0F05                        syscall
+   595                                  
+   596                                  
