@@ -122,7 +122,61 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 		db 0x0a, 0xD
 	%endmacro
 
-		%macro marcador_j1 0			;Crea una línea completa de 'O' seguida de una nueva línea marcadores
+	;Esta parte es para la creacion de la pista
+
+	%macro up_down_pista 0			;Parte de arriba de la pista
+		db "X"
+		times 9 db " "
+		times 90 db "O"
+		times 9 db " "
+		db "X"
+		db 0x0a, 0xD
+	%endmacro
+
+	%macro right_pista1 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+		db "X"
+		times 9 db " "
+		db "O"
+		times 88 db " "
+		db "O"
+		times 9 db " "
+		db "X", 0x0a, 0xD
+	%endmacro
+
+	%macro right_pista2 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+		db "X"
+		times 9 db " "
+		db "O"
+		times 70 db " "
+		times 19 db "O"
+		times 9 db " "
+		db "X", 0x0a, 0xD
+	%endmacro
+
+	%macro right_pista3 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+		db "X"
+		times 9 db " "
+		db "O"
+		times 70 db " "
+		db "O"
+		times 27 db " "
+		db "X", 0x0a, 0xD
+	%endmacro
+
+	%macro right_pista4 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
+		db "X"
+		times 9 db " "
+		db "O"
+		times 70 db " "
+		db "O"
+		times 4 db " "
+		times 23 db "O"
+		db "X", 0x0a, 0xD
+	%endmacro
+
+	; Fin de la creacion de la pista
+
+	%macro marcador_j1 0			;Crea una línea completa de 'O' seguida de una nueva línea marcadores
 		db "X PLAYER 1 TURNS: "
 		times 60 db " "
 		db "Time:"
@@ -193,13 +247,36 @@ section .data
 		marcador_j1
 		marcador_j2 
 		full_line
-        %rep 9  ; 3 = linea superior+linea inferior+linea de comandos 
+        %rep 3  ; 3 = linea superior+linea inferior+linea de comandos 
         hollow_line
         %endrep 
 
-		%rep 9  ; 3 = linea superior+linea inferior+linea de comandos 
+		up_down_pista
+
+
+        right_pista2
+
+       %rep 2  ; 3 = linea superior+linea inferior+linea de comandos 
+        right_pista3
+        %endrep
+
+		right_pista4
+		right_pista4
+		right_pista4
+
+       %rep 2  ; 3 = linea superior+linea inferior+linea de comandos 
+        right_pista3
+        %endrep 
+
+		right_pista2
+
+
+		up_down_pista
+
+		%rep 3  ; 3 = linea superior+linea inferior+linea de comandos 
         hollow_line
         %endrep
+
         full_line
 	board_size:   equ   $ - board
 
@@ -215,7 +292,7 @@ section .data
 	;board: Es la dirección de inicio del tablero
 	;40: Es el desplazamiento horizontal inicial desde el borde izquierdo del tablero.
 	;29 * (column_cells + 2): Es el desplazamiento vertical. 20 indica la fila en la que se coloca la paleta, y column_cells + 2 es el número de caracteres por fila, incluyendo los caracteres de nueva línea 
-	pallet_position dq board + 25 + 20 * (column_cells)
+	pallet_position dq board + 20 + (12 * 111)
 	pallet_size dq 3
 
 	pared1_x_pos: dq 30 ;0-59
@@ -343,6 +420,10 @@ move_pallet:
 
 	push rax
 	push rcx
+
+	mov r13, [colj]
+	cmp r13, 1
+	je .endp
 	  
 	cmp rdi, up_direction					; Comparar el valor de rdi (dirección) con left_direction
 	je .move_up						; Si no es igual a left_direction, saltar a .move_right
