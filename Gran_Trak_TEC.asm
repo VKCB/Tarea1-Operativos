@@ -26,7 +26,7 @@ default rel
     velocidad_min    EQU 100    ; Límite inferior de velocidad
     velocidad_max    EQU 150    ; Límite superior de velocidad
 
-       bots_pos_x       DW 10, 20, 30  ; Posiciones X de los bots (valores iniciales)
+    bots_pos_x       DW 10, 20, 30  ; Posiciones X de los bots (valores iniciales)
     bots_pos_y       DW 5, 6, 7     ; Posiciones Y de los bots (valores iniciales)
     bots_velocidad   DW 120, 130, 140  ; Velocidades fijas de cada bot (valores iniciales)
     seed             DW 1234h      ; Semilla para aleatoriedad (valor fijo)
@@ -215,6 +215,8 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 		syscall
 	%endmacro
 
+
+
 	;Esta es la funcion que obtiene lo que uno ingrese
 	%macro getchar 0			;Lee un solo carácter de la entrada estándar y lo almacena en input_char
 		mov     rax, sys_read
@@ -229,6 +231,29 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 		mov rdi, timespec
 		xor esi, esi		; ignore remaining time in case of call interruption
 		syscall			; sleep for tv_sec seconds + tv_nsec nanoseconds
+	%endmacro
+
+	%macro dibujar_bot 2
+		; Dibuja un bot en la posición X, Y especificada
+    	; %1: Posición X
+    	; %2: Posición Y
+    	mov rdi, %1            ; Cargar la posición X del bot
+    	mov rsi, %2            ; Cargar la posición Y del bot
+		db "B"
+		times 9 db " "		
+		db "B", 0x0a, 0xD
+		; Imprimir el símbolo del bot
+    	mov al, 'B'            ; El símbolo del bot
+    	call print_char        ; Imprimir el símbolo en la pantalla
+	%endmacro
+
+	%macro print_char 0
+    ; Imprime un solo carácter en la pantalla (usando la syscall write)
+    mov rax, sys_write     ; syscall para escribir en la consola
+    mov rdi, 1             ; stdout
+    mov rsi, rax           ; el carácter a imprimir
+    mov rdx, 1             ; solo un byte (el carácter)
+    syscall
 	%endmacro
 
 global _start
@@ -313,7 +338,6 @@ section .data
 		cole: dq 0
 		pared: dq 21
 		colplayer: dq 0 
-
 
 
 section .text
@@ -575,81 +599,74 @@ _start:
 		jmp exit
 
 
-
-start:
-    MOV AX, @DATA
-    MOV DS, AX
-
     ; Inicializar los bots
-    CALL inicializar_bots
+    call inicializar_bots
 
-    ; Bucle principal del juego
 main_loop:
-    CALL mover_bots  ; Mueve los bots en cada iteración
-    JMP main_loop
+    call mover_bots
+    jmp main_loop
 
     ; Terminar programa
-    MOV AX, 4C00h
-    INT 21h
+    mov rax, 60     ; syscall de exit
+    xor rdi, rdi     ; código de salida 0
+    syscall
 
 ;-----------------------------------
 ; Función: Inicializar Bots
 ;-----------------------------------
-inicializar_bots PROC
-    MOV CX, num_bots
-    MOV SI, 0  ; Índice del bot
+inicializar_bots:
+    mov rcx, num_bots
+    mov rsi, 0  ; Índice del bot
+	dibujar_bot [bots_pos_x], [bots_pos_y]    ; Bot 1
+    dibujar_bot [bots_pos_x+2], [bots_pos_y+1]  ; Bot 2
+    dibujar_bot [bots_pos_x+4], [bots_pos_y+2]  ; Bot 3
 
 bot_init_loop:
-    CALL generar_aleatorio
-    ADD DX, velocidad_min  ; Asegurar que esté en el rango [100,150]
-    CMP DX, velocidad_max
-    JBE store_speed
-    MOV DX, velocidad_max  ; Si es mayor, limitar a velocidad_max
+    call generar_aleatorio
+    add dx, velocidad_min  ; Asegurar que esté en el rango [100,150]
+    cmp dx, velocidad_max
+    jbe store_speed
+    mov dx, velocidad_max  ; Si es mayor, limitar a velocidad_max
 
 store_speed:
-    MOV bots_velocidad[SI], DX
+    mov [bots_velocidad + rsi * 2], dx
 
     ; Posición inicial (ejemplo en la línea de salida)
-    MOV bots_pos_x[SI], 50
-    MOV bots_pos_y[SI], 10
-    ADD SI, 2  ; Mover al siguiente bot
-    LOOP bot_init_loop
-    RET
-inicializar_bots ENDP
+    mov word [bots_pos_x + rsi * 2], 50
+    mov word [bots_pos_y + rsi * 2], 10
+    add rsi, 1  ; Mover al siguiente bot
+    loop bot_init_loop
+    ret
 
 ;-----------------------------------
 ; Función: Mover Bots
 ;-----------------------------------
-mover_bots PROC
-    MOV CX, num_bots
-    MOV SI, 0
+mover_bots:
+    mov rcx, num_bots
+    mov rsi, 0
 
 bot_move_loop:
-    MOV AX, bots_pos_x[SI] 
-    ADD AX, bots_velocidad[SI] ; Simula avance en la pista
-    MOV bots_pos_x[SI], AX
+    mov ax, [bots_pos_x + rsi * 2]
+    add ax, [bots_velocidad + rsi * 2]
+    mov [bots_pos_x + rsi * 2], ax
 
     ; Aquí puedes agregar lógica para curvas u obstáculos
 
-    ADD SI, 2
-    LOOP bot_move_loop
-    RET
-mover_bots ENDP
+    add rsi, 1
+    loop bot_move_loop
+    ret
 
 ;-----------------------------------
 ; Función: Generar número aleatorio
 ;-----------------------------------
-generar_aleatorio PROC
-    MOV AX, seed
-    MUL DX
-    ADD AX, 1234h
-    MOV DX, AX
-    MOV seed, AX
-    AND DX, 00FFh ; Tomar solo una parte para que no sea tan grande
-    RET
-generar_aleatorio ENDP
-
-END start
+generar_aleatorio:
+    mov ax, [seed]
+    imul dx
+    add ax, 1234h
+    mov dx, ax
+    mov [seed], ax
+    and dx, 00FFh ; Tomar solo una parte para que no sea tan grande
+    ret
 
 
 
