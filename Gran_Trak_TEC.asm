@@ -244,7 +244,7 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 		db "B", 0x0a, 0xD
 		; Imprimir el símbolo del bot
     	mov al, 'B'            ; El símbolo del bot
-    	call print_char        ; Imprimir el símbolo en la pantalla
+    	print_char_bot 'B'  ; Imprimir el símbolo en la pantalla
 	%endmacro
 
 	%macro print_char 0
@@ -252,6 +252,15 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
     mov rax, sys_write     ; syscall para escribir en la consola
     mov rdi, 1             ; stdout
     mov rsi, rax           ; el carácter a imprimir
+    mov rdx, 1             ; solo un byte (el carácter)
+    syscall
+	%endmacro
+
+	%macro print_char_bot 1
+    ; Imprime un solo carácter en la pantalla (usando la syscall write)
+    mov rax, sys_write     ; syscall para escribir en la consola
+    mov rdi, 1             ; stdout
+    mov rsi, %1           ; el carácter a imprimir
     mov rdx, 1             ; solo un byte (el carácter)
     syscall
 	%endmacro
@@ -617,7 +626,7 @@ main_loop:
 inicializar_bots:
     mov rcx, num_bots
     mov rsi, 0  ; Índice del bot
-	dibujar_bot [bots_pos_x], [bots_pos_y]    ; Bot 1
+	dibujar_bot [bots_pos_x], [bots_pos_y]    ; Bot 1 
     dibujar_bot [bots_pos_x+2], [bots_pos_y+1]  ; Bot 2
     dibujar_bot [bots_pos_x+4], [bots_pos_y+2]  ; Bot 3
 
@@ -650,7 +659,6 @@ bot_move_loop:
     add ax, [bots_velocidad + rsi * 2]
     mov [bots_pos_x + rsi * 2], ax
 
-    ; Aquí puedes agregar lógica para curvas u obstáculos
 
     add rsi, 1
     loop bot_move_loop
@@ -665,7 +673,7 @@ generar_aleatorio:
     add ax, 1234h
     mov dx, ax
     mov [seed], ax
-    and dx, 00FFh ; Tomar solo una parte para que no sea tan grande
+    and dx, 00FFh 
     ret
 
 
