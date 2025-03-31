@@ -22,15 +22,6 @@ default rel
 	right_direction: equ 1
 	up_direction: equ 2
 	down_direction: equ 3
-    num_bots         EQU 3      ; Cantidad de bots en la carrera
-    velocidad_min    EQU 100    ; Límite inferior de velocidad
-    velocidad_max    EQU 150    ; Límite superior de velocidad
-
-       bots_pos_x       DW 10, 20, 30  ; Posiciones X de los bots (valores iniciales)
-    bots_pos_y       DW 5, 6, 7     ; Posiciones Y de los bots (valores iniciales)
-    bots_velocidad   DW 120, 130, 140  ; Velocidades fijas de cada bot (valores iniciales)
-    seed             DW 1234h      ; Semilla para aleatoriedad (valor fijo)
-
 
 
 
@@ -298,10 +289,8 @@ section .data
 		VMIN:			equ 6
 		CC_C:			equ 18
 
-	;board: Es la dirección de inicio del tablero
-	;40: Es el desplazamiento horizontal inicial desde el borde izquierdo del tablero.
-	;29 * (column_cells + 2): Es el desplazamiento vertical. 20 indica la fila en la que se coloca la paleta, y column_cells + 2 es el número de caracteres por fila, incluyendo los caracteres de nueva línea 
-	pallet_position dq board + 20 + (12 * 111)
+
+	pallet_position dq board + 85 + ((column_cells + 2) * 10) ; El 1 es el movimiento horizontal y  en ((column_cells + 2) * 12) el 12 es el movimiento vertical 
 	pallet_size dq 3
 
 	pared1_x_pos: dq 30 ;0-59
@@ -448,29 +437,234 @@ move_pallet:
 
 	.move_up:
 		mov r8, [pallet_position]
-		cmp r8, 320							; Verificar si está en la primera fila
-		jl .endp							; Si sí, no moverse más arriba
 
-		mov r9, [pallet_size]
-		mov byte [r8], char_space	; Limpiar último carácter del palet
-		sub r8, 112						; Mover una fila arriba (restar 320)
-		mov [pallet_position], r8			; Actualizar posición
+		; INICIO DE COMPARACIONES PARA LAS COLISIONES
+		cmp r8, board + 109 + ((column_cells + 2) * 4)
+		jl .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 9)
+		je .endp 
+		cmp r8, board + 83 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 84 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 85 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 86 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 9)
+		je .endp
+
+		cmp r8, board + 86 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 100 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 101 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 102 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 103 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 104 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 105 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 106 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 107 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 108 + ((column_cells + 2) * 14)
+		je .endp
+
+		cmp r8, board + 9 + ((column_cells + 2) * 18)  ; Comparar con 81
+		jle .fuera_rango  ; Si rax <= 81, salir
+
+		cmp r8, board + 100 + ((column_cells + 2) * 18) ; Comparar con 100
+		jge .fuera_rango  ; Si rax >= 100, salir
+
+		; Aquí entra si 81 < r8 < 100
+		jmp .continuar    
+
+		.fuera_rango:
+			mov r9, [pallet_size]
+			mov byte [r8], char_space	; Limpiar último carácter del palet
+			sub r8, 112						; Mover una fila arriba (restar 320)
+			mov [pallet_position], r8			; Actualizar posición
 
 		jmp .endp
+
+		.continuar:
+			jmp .endp
 
 	.move_down:
 
 		mov r8, [pallet_position]
-		cmp r8, 320						; Verificar si está en la última fila (200 * 320)
-		jl .endp							; Si sí, no moverse más abajo
 
-		mov r9, [pallet_size]
-		mov byte [r8], char_space	; Limpiar último carácter del palet
-		add r8, 112							; Mover una fila abajo (sumar 320)
-		mov [pallet_position], r8			; Actualizar posición
+		cmp r8, board + 86 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 100 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 101 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 102 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 103 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 104 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 105 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 106 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 107 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 108 + ((column_cells + 2) * 10)  
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 83 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 84 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 85 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 86 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 15)
+		je .endp
+		
+		cmp r8, board + ((column_cells + 2) * 20)
+		jg .endp
+
+
+		cmp r8, board + 9 + ((column_cells + 2) * 6)  
+		jle .fuera_rango_down  ; Si rax <= 81, salir
+
+		cmp r8, board + 100 + ((column_cells + 2) * 6) 
+		jge .fuera_rango_down  ; Si rax >= 100, salir
+
+		
+
+		; Aquí entra si 81 < r8 < 100
+		jmp .continuar    
+
+		.fuera_rango_down:
+			mov r9, [pallet_size]
+			mov byte [r8], char_space	; Limpiar último carácter del palet
+			add r8, 112							; Mover una fila abajo (sumar 320)
+			mov [pallet_position], r8			; Actualizar posición
 
 
 		jmp .endp	
+
+		.continuar_down:
+			jmp .endp
+
+
+
+		
+		
 
 	.move_left:
 
@@ -479,6 +673,97 @@ move_pallet:
 		je .endp
 
 		mov r8, [pallet_position]
+
+		; INICIO DE COMPARACIONES PARA LAS COLISIONES
+		cmp r8, board + 1 + ((column_cells + 2) * 4)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 5)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 6)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 7)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 8)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 9)
+		je .endp 
+	
+		cmp r8, board + 1 + ((column_cells + 2) * 10)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 11)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 12)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 12)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 13)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 14)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 15)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 16)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 17)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 18)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 19)
+		je .endp
+
+		cmp r8, board + 1 + ((column_cells + 2) * 20)
+		je .endp
+
+		cmp r8, board + 100 + ((column_cells + 2) * 7)
+		je .endp
+
+		cmp r8, board + 100 + ((column_cells + 2) * 8)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 9)
+		je .endp
+
+		;-----COLISION PARTE INTERNA DE LA CURVA-----
+		cmp r8, board + 82 + ((column_cells + 2) * 10)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 11)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 12)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 13)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 14)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 15)
+		je .endp
+		;---FIN COLISION PARTE INTERNA DE LA CURVA----
+
+		cmp r8, board + 100 + ((column_cells + 2) * 16)
+		je .endp
+
+		cmp r8, board + 100 + ((column_cells + 2) * 17)
+		je .endp
+
 		mov r9, [pallet_size]
 		mov byte [r8], char_space	; Limpiar el último carácter del palet
 		dec r8								; Mover la posición del palet una unidad a la izquierda
@@ -493,10 +778,65 @@ move_pallet:
 		je .endp
 
 		mov r8, [pallet_position]
+
+		
+		cmp r8, board + 108 + ((column_cells + 2) * 4)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 5)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 6)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 7)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 8)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 9)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 10)
+		je .endp
+
+		cmp r8, board + 85 + ((column_cells + 2) * 11)
+		je .endp
+
+		cmp r8, board + 85 + ((column_cells + 2) * 12)
+		je .endp
+
+		cmp r8, board + 85 + ((column_cells + 2) * 13)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 14)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 15)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 16)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 17)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 18)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 19)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 20)
+		je .endp
+
 		mov byte [r8], char_space
 		inc r8
 		mov [pallet_position], r8
  
+
+
 	.endp:
 		mov qword [colj], 0
 
@@ -573,84 +913,6 @@ _start:
 		print clear, clear_length
 		
 		jmp exit
-
-
-
-start:
-    MOV AX, @DATA
-    MOV DS, AX
-
-    ; Inicializar los bots
-    CALL inicializar_bots
-
-    ; Bucle principal del juego
-main_loop:
-    CALL mover_bots  ; Mueve los bots en cada iteración
-    JMP main_loop
-
-    ; Terminar programa
-    MOV AX, 4C00h
-    INT 21h
-
-;-----------------------------------
-; Función: Inicializar Bots
-;-----------------------------------
-inicializar_bots PROC
-    MOV CX, num_bots
-    MOV SI, 0  ; Índice del bot
-
-bot_init_loop:
-    CALL generar_aleatorio
-    ADD DX, velocidad_min  ; Asegurar que esté en el rango [100,150]
-    CMP DX, velocidad_max
-    JBE store_speed
-    MOV DX, velocidad_max  ; Si es mayor, limitar a velocidad_max
-
-store_speed:
-    MOV bots_velocidad[SI], DX
-
-    ; Posición inicial (ejemplo en la línea de salida)
-    MOV bots_pos_x[SI], 50
-    MOV bots_pos_y[SI], 10
-    ADD SI, 2  ; Mover al siguiente bot
-    LOOP bot_init_loop
-    RET
-inicializar_bots ENDP
-
-;-----------------------------------
-; Función: Mover Bots
-;-----------------------------------
-mover_bots PROC
-    MOV CX, num_bots
-    MOV SI, 0
-
-bot_move_loop:
-    MOV AX, bots_pos_x[SI] 
-    ADD AX, bots_velocidad[SI] ; Simula avance en la pista
-    MOV bots_pos_x[SI], AX
-
-    ; Aquí puedes agregar lógica para curvas u obstáculos
-
-    ADD SI, 2
-    LOOP bot_move_loop
-    RET
-mover_bots ENDP
-
-;-----------------------------------
-; Función: Generar número aleatorio
-;-----------------------------------
-generar_aleatorio PROC
-    MOV AX, seed
-    MUL DX
-    ADD AX, 1234h
-    MOV DX, AX
-    MOV seed, AX
-    AND DX, 00FFh ; Tomar solo una parte para que no sea tan grande
-    RET
-generar_aleatorio ENDP
-
-END start
-
 
 
 start_screen: 
