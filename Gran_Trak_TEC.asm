@@ -1,37 +1,33 @@
 bits 64
 default rel
 
+; Definiciones de las constantes
+sys_read: equ 0    
+sys_write: equ 1
+sys_nanosleep: equ 35
+sys_nanosleep2: equ 200
+sys_time: equ 201
+sys_fcntl: equ 72
 
-; Here comes the defines
-	sys_read: equ 0	
-	sys_write:	equ 1
-	sys_nanosleep:	equ 35
-	sys_nanosleep2:	equ 200
-	sys_time:	equ 201
-	sys_fcntl:	equ 72
+char_equal: equ 61 
+char_aster: equ 42
+char_may: equ 62 
+char_men: equ 60 
+char_dosp: equ 58
 
-	char_equal: equ 61 
-	char_aster: equ 42
-	char_may: equ 62 
-	char_men: equ 60 
-	char_dosp: equ 58
-	char_comillas: equ 176
-	char_comilla: equ 39 
-	char_space: equ 32 
-	left_direction: equ -1
-	right_direction: equ 1
-	up_direction: equ 2
-	down_direction: equ 3
-    num_bots         EQU 3      ; Cantidad de bots en la carrera
-    velocidad_min    EQU 100    ; Límite inferior de velocidad
-    velocidad_max    EQU 150    ; Límite superior de velocidad
+; Definir los caracteres para el jugador y el bot usando equ
+char_comillas: equ 0x22  ; El símbolo del jugador, comillas (")
+char_bot: equ 0x2F       ; El símbolo del bot (/)
 
-    bots_pos_x       DW 10, 20, 30  ; Posiciones X de los bots (valores iniciales)
-    bots_pos_y       DW 5, 6, 7     ; Posiciones Y de los bots (valores iniciales)
-    bots_velocidad   DW 120, 130, 140  ; Velocidades fijas de cada bot (valores iniciales)
-    seed             DW 1234h      ; Semilla para aleatoriedad (valor fijo)
+char_space: equ 32       ; Espacio en blanco (usado para borrar las posiciones)
+left_direction: equ -1
+right_direction: equ 1
+up_direction: equ 2
+down_direction: equ 3
 
-
+; Definir la posición inicial del jugador y el bot
+player_position db 10   ; Posición inicial del jugador (en la pantalla)
+bot_position db 40      ; Posición inicial del bot (en la pantalla)
 
 
 STDIN_FILENO: equ 0			;Se utiliza en llamadas al sistema que requieren un descriptor de archivo, por ejemplo, al leer de la entrada estándar
@@ -64,9 +60,9 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 	msg14: db "               ", 0xA, 0xD
 	msg17: db "               ", 0xA, 0xD
 	msg18: db "               ", 0xA, 0xD
-	msg2: db "						Valerin Calderon       ", 0xA, 0xD
+	msg2: db "						Valerin Calderon  B     ", 0xA, 0xD
 	msg5: db "						Yendry Badilla         ", 0xA, 0xD
-	msg15: db "						Andrés Molina          ", 0xA, 0xD
+		msg15: db "						Andrés Molina          ", 0xA, 0xD
 	msg6: db "               ", 0xA, 0xD
 	msg7: db "               ", 0xA, 0xD
 	msg8: db "               ", 0xA, 0xD
@@ -106,6 +102,7 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 	msg24_length:	equ $-msg24
 	msg25_length:	equ $-msg25
 	msg26_length:	equ $-msg26
+
 
 
 	; Usefull macros (Como funciones reutilizables)
@@ -201,6 +198,17 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 		db 0x0a, 0xD
 	%endmacro
 
+	%macro marcador_bot 0           ; Crea una línea completa de 'O' seguida de una nueva línea marcadores
+    db "O BOT TURNS: "
+    times 64 db " "             ; Espacios para alineación
+    db "Time:"
+    times 26 db " "             ; Espacios después de "Time:"
+    db "O"
+    db 0x0a, 0xD                
+	%endmacro
+
+
+
 	%macro hollow_line 0		;Crea una línea con 'X' en los extremos y espacios en el medio, seguida de una nueva línea
 		db "X"
 		times column_cells-2 db char_space	;A 80 le resta las 2 X de los extremos e imprime 78 espacios
@@ -214,8 +222,6 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 		mov edx, %2				;Parametro 2
 		syscall
 	%endmacro
-
-
 
 	;Esta es la funcion que obtiene lo que uno ingrese
 	%macro getchar 0			;Lee un solo carácter de la entrada estándar y lo almacena en input_char
@@ -231,38 +237,6 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 		mov rdi, timespec
 		xor esi, esi		; ignore remaining time in case of call interruption
 		syscall			; sleep for tv_sec seconds + tv_nsec nanoseconds
-	%endmacro
-
-	%macro dibujar_bot 2
-		; Dibuja un bot en la posición X, Y especificada
-    	; %1: Posición X
-    	; %2: Posición Y
-    	mov rdi, %1            ; Cargar la posición X del bot
-    	mov rsi, %2            ; Cargar la posición Y del bot
-		db "B"
-		times 9 db " "		
-		db "B", 0x0a, 0xD
-		; Imprimir el símbolo del bot
-    	mov al, 'B'            ; El símbolo del bot
-    	print_char_bot 'B'  ; Imprimir el símbolo en la pantalla
-	%endmacro
-
-	%macro print_char 0
-    ; Imprime un solo carácter en la pantalla (usando la syscall write)
-    mov rax, sys_write     ; syscall para escribir en la consola
-    mov rdi, 1             ; stdout
-    mov rsi, rax           ; el carácter a imprimir
-    mov rdx, 1             ; solo un byte (el carácter)
-    syscall
-	%endmacro
-
-	%macro print_char_bot 1
-    ; Imprime un solo carácter en la pantalla (usando la syscall write)
-    mov rax, sys_write     ; syscall para escribir en la consola
-    mov rdi, 1             ; stdout
-    mov rsi, %1           ; el carácter a imprimir
-    mov rdx, 1             ; solo un byte (el carácter)
-    syscall
 	%endmacro
 
 global _start
@@ -281,6 +255,7 @@ section .data
 
 	urandom db '/dev/urandom', 0
 	newline db 10, 0
+    
 
 	score dq 0
 	score_position dq board + 19 + 10* (column_cells + 2)
@@ -289,6 +264,7 @@ section .data
 		full_line
 		marcador_j1
 		marcador_j2 
+		marcador_bot
 		full_line
         %rep 3  ; 3 = linea superior+linea inferior+linea de comandos 
         hollow_line
@@ -332,10 +308,8 @@ section .data
 		VMIN:			equ 6
 		CC_C:			equ 18
 
-	;board: Es la dirección de inicio del tablero
-	;40: Es el desplazamiento horizontal inicial desde el borde izquierdo del tablero.
-	;29 * (column_cells + 2): Es el desplazamiento vertical. 20 indica la fila en la que se coloca la paleta, y column_cells + 2 es el número de caracteres por fila, incluyendo los caracteres de nueva línea 
-	pallet_position dq board + 20 + (12 * 111)
+
+	pallet_position dq board + 85 + ((column_cells + 2) * 10) ; El 1 es el movimiento horizontal y  en ((column_cells + 2) * 12) el 12 es el movimiento vertical 
 	pallet_size dq 3
 
 	pared1_x_pos: dq 30 ;0-59
@@ -347,6 +321,7 @@ section .data
 		cole: dq 0
 		pared: dq 21
 		colplayer: dq 0 
+
 
 
 section .text
@@ -442,14 +417,46 @@ write_stdin_termios:								;Escribe los atributos del terminal utilizando la ll
 ;
 ; Return;
 ;	void
-print_pallet:
-  
-	mov r8, [pallet_position] 
-	.write_pallet:
-		mov byte [r8], char_comillas
 
-	 
-	ret
+; Función print_pallet:
+; Dibuja al jugador (char_comillas) y al bot (char_bot) en sus respectivas posiciones
+print_pallet:
+    ; Obtener la posición actual del jugador
+    mov r8, [player_position]   ; Cargar la dirección de la posición del jugador
+    mov byte [r8], 0x20         ; Borrar la posición anterior del jugador (poner un espacio en blanco)
+    mov byte [r8], char_comillas ; Colocar el caracter del jugador
+    
+    ; Obtener la posición actual del bot
+    mov r8, [bot_position]      ; Cargar la dirección de la posición del bot
+    mov byte [r8], 0x20         ; Borrar la posición anterior del bot (poner un espacio en blanco)
+    mov byte [r8], char_bot     ; Colocar el caracter del bot
+    
+    ret
+
+; Función move_bot:
+; Mueve automáticamente el bot de una celda hacia la derecha
+move_bot:
+    ; Obtener la posición actual del bot
+    mov r8, [bot_position]      ; Cargar la dirección de la posición del bot
+    inc byte [r8]               ; Incrementar la posición del bot (moverlo 1 celda a la derecha)
+    
+    ; Verificar si el bot ha llegado al límite de la pantalla (ejemplo de 80 columnas)
+    cmp byte [r8], 80           ; Comparar la posición del bot con 80
+    jge reset_bot_position      ; Si el bot supera el límite, reiniciar la posición
+    
+    ret
+
+reset_bot_position:
+    ; Si el bot ha llegado al final, volver al inicio
+    mov byte [bot_position], 0  ; Colocar la posición inicial del bot
+    ret
+
+; Si necesitas un bloque separado, usa una etiqueta diferente:
+write_pallet:
+
+    ; Código para manejar la escritura de la paleta
+
+    ret
 
 ; Function: move_pallet
 ; This function is in charge of moving the pallet in a given direction
@@ -481,29 +488,234 @@ move_pallet:
 
 	.move_up:
 		mov r8, [pallet_position]
-		cmp r8, 320							; Verificar si está en la primera fila
-		jl .endp							; Si sí, no moverse más arriba
 
-		mov r9, [pallet_size]
-		mov byte [r8], char_space	; Limpiar último carácter del palet
-		sub r8, 112						; Mover una fila arriba (restar 320)
-		mov [pallet_position], r8			; Actualizar posición
+		; INICIO DE COMPARACIONES PARA LAS COLISIONES
+		cmp r8, board + 109 + ((column_cells + 2) * 4)
+		jl .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 9)
+		je .endp 
+		cmp r8, board + 83 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 84 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 85 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 86 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 9)
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 9)
+		je .endp
+
+		cmp r8, board + 86 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 100 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 101 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 102 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 103 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 104 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 105 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 106 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 107 + ((column_cells + 2) * 14)
+		je .endp
+		cmp r8, board + 108 + ((column_cells + 2) * 14)
+		je .endp
+
+		cmp r8, board + 9 + ((column_cells + 2) * 18)  ; Comparar con 81
+		jle .fuera_rango  ; Si rax <= 81, salir
+
+		cmp r8, board + 100 + ((column_cells + 2) * 18) ; Comparar con 100
+		jge .fuera_rango  ; Si rax >= 100, salir
+
+		; Aquí entra si 81 < r8 < 100
+		jmp .continuar    
+
+		.fuera_rango:
+			mov r9, [pallet_size]
+			mov byte [r8], char_space	; Limpiar último carácter del palet
+			sub r8, 112						; Mover una fila arriba (restar 320)
+			mov [pallet_position], r8			; Actualizar posición
 
 		jmp .endp
+
+		.continuar:
+			jmp .endp
 
 	.move_down:
 
 		mov r8, [pallet_position]
-		cmp r8, 320						; Verificar si está en la última fila (200 * 320)
-		jl .endp							; Si sí, no moverse más abajo
 
-		mov r9, [pallet_size]
-		mov byte [r8], char_space	; Limpiar último carácter del palet
-		add r8, 112							; Mover una fila abajo (sumar 320)
-		mov [pallet_position], r8			; Actualizar posición
+		cmp r8, board + 86 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 100 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 101 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 102 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 103 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 104 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 105 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 106 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 107 + ((column_cells + 2) * 10)  
+		je .endp
+		cmp r8, board + 108 + ((column_cells + 2) * 10)  
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 83 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 84 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 85 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 86 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 87 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 88 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 89 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 90 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 91 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 92 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 93 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 94 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 95 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 96 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 97 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 98 + ((column_cells + 2) * 15)
+		je .endp
+		cmp r8, board + 99 + ((column_cells + 2) * 15)
+		je .endp
+		
+		cmp r8, board + ((column_cells + 2) * 20)
+		jg .endp
+
+
+		cmp r8, board + 9 + ((column_cells + 2) * 6)  
+		jle .fuera_rango_down  ; Si rax <= 81, salir
+
+		cmp r8, board + 100 + ((column_cells + 2) * 6) 
+		jge .fuera_rango_down  ; Si rax >= 100, salir
+
+		
+
+		; Aquí entra si 81 < r8 < 100
+		jmp .continuar    
+
+		.fuera_rango_down:
+			mov r9, [pallet_size]
+			mov byte [r8], char_space	; Limpiar último carácter del palet
+			add r8, 112							; Mover una fila abajo (sumar 320)
+			mov [pallet_position], r8			; Actualizar posición
 
 
 		jmp .endp	
+
+		.continuar_down:
+			jmp .endp
+
+
+
+		
+		
 
 	.move_left:
 
@@ -512,6 +724,97 @@ move_pallet:
 		je .endp
 
 		mov r8, [pallet_position]
+
+		; INICIO DE COMPARACIONES PARA LAS COLISIONES
+		cmp r8, board + 1 + ((column_cells + 2) * 4)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 5)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 6)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 7)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 8)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 9)
+		je .endp 
+	
+		cmp r8, board + 1 + ((column_cells + 2) * 10)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 11)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 12)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 12)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 13)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 14)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 15)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 16)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 17)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 18)
+		je .endp 
+
+		cmp r8, board + 1 + ((column_cells + 2) * 19)
+		je .endp
+
+		cmp r8, board + 1 + ((column_cells + 2) * 20)
+		je .endp
+
+		cmp r8, board + 100 + ((column_cells + 2) * 7)
+		je .endp
+
+		cmp r8, board + 100 + ((column_cells + 2) * 8)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 9)
+		je .endp
+
+		;-----COLISION PARTE INTERNA DE LA CURVA-----
+		cmp r8, board + 82 + ((column_cells + 2) * 10)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 11)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 12)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 13)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 14)
+		je .endp
+
+		cmp r8, board + 82 + ((column_cells + 2) * 15)
+		je .endp
+		;---FIN COLISION PARTE INTERNA DE LA CURVA----
+
+		cmp r8, board + 100 + ((column_cells + 2) * 16)
+		je .endp
+
+		cmp r8, board + 100 + ((column_cells + 2) * 17)
+		je .endp
+
 		mov r9, [pallet_size]
 		mov byte [r8], char_space	; Limpiar el último carácter del palet
 		dec r8								; Mover la posición del palet una unidad a la izquierda
@@ -526,10 +829,65 @@ move_pallet:
 		je .endp
 
 		mov r8, [pallet_position]
+
+		
+		cmp r8, board + 108 + ((column_cells + 2) * 4)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 5)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 6)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 7)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 8)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 9)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 10)
+		je .endp
+
+		cmp r8, board + 85 + ((column_cells + 2) * 11)
+		je .endp
+
+		cmp r8, board + 85 + ((column_cells + 2) * 12)
+		je .endp
+
+		cmp r8, board + 85 + ((column_cells + 2) * 13)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 14)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 15)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 16)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 17)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 18)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 19)
+		je .endp
+
+		cmp r8, board + 108 + ((column_cells + 2) * 20)
+		je .endp
+
 		mov byte [r8], char_space
 		inc r8
 		mov [pallet_position], r8
  
+
+
 	.endp:
 		mov qword [colj], 0
 
@@ -550,6 +908,10 @@ _start:
 		;call rand_num
 		call print_pallet 
 		print board, board_size	 
+
+
+    	; Mover el bot automáticamente cada cierto intervalo
+    	call move_bot
 
 	
 		
@@ -607,102 +969,33 @@ _start:
 		
 		jmp exit
 
+start_screen:
+    push rax
+    push rcx
+    push rdx
+    push rdi
+    push rsi
+    
+    ; Imprimir mensaje inicial
+    print msg1, msg1_length
+    
+    ; Esperar entrada del usuario
+    getchar
 
-    ; Inicializar los bots
-    call inicializar_bots
+    ; Limpiar pantalla
+    print clear, clear_length
 
-main_loop:
-    call mover_bots
-    jmp main_loop
-
-    ; Terminar programa
-    mov rax, 60     ; syscall de exit
-    xor rdi, rdi     ; código de salida 0
-    syscall
-
-;-----------------------------------
-; Función: Inicializar Bots
-;-----------------------------------
-inicializar_bots:
-    mov rcx, num_bots
-    mov rsi, 0  ; Índice del bot
-	dibujar_bot [bots_pos_x], [bots_pos_y]    ; Bot 1 
-    dibujar_bot [bots_pos_x+2], [bots_pos_y+1]  ; Bot 2
-    dibujar_bot [bots_pos_x+4], [bots_pos_y+2]  ; Bot 3
-
-bot_init_loop:
-    call generar_aleatorio
-    add dx, velocidad_min  ; Asegurar que esté en el rango [100,150]
-    cmp dx, velocidad_max
-    jbe store_speed
-    mov dx, velocidad_max  ; Si es mayor, limitar a velocidad_max
-
-store_speed:
-    mov [bots_velocidad + rsi * 2], dx
-
-    ; Posición inicial (ejemplo en la línea de salida)
-    mov word [bots_pos_x + rsi * 2], 50
-    mov word [bots_pos_y + rsi * 2], 10
-    add rsi, 1  ; Mover al siguiente bot
-    loop bot_init_loop
+    pop rax
+    pop rcx
+    pop rdx
+    pop rdi
+    pop rsi
     ret
 
-;-----------------------------------
-; Función: Mover Bots
-;-----------------------------------
-mover_bots:
-    mov rcx, num_bots
-    mov rsi, 0
-
-bot_move_loop:
-    mov ax, [bots_pos_x + rsi * 2]
-    add ax, [bots_velocidad + rsi * 2]
-    mov [bots_pos_x + rsi * 2], ax
-
-
-    add rsi, 1
-    loop bot_move_loop
-    ret
-
-;-----------------------------------
-; Función: Generar número aleatorio
-;-----------------------------------
-generar_aleatorio:
-    mov ax, [seed]
-    imul dx
-    add ax, 1234h
-    mov dx, ax
-    mov [seed], ax
-    and dx, 00FFh 
-    ret
-
-
-
-start_screen: 
-
-	push rax
-	push rcx
-	push rdx
-	push rdi
-	push rsi
-	
-	print msg1, msg1_length	
-	getchar
-	print clear, clear_length
-
-	pop rax
-	pop rcx
-	pop rdx
-	pop rdi
-	pop rsi
-	ret
-
-
-
-exit: 
-	call canonical_on
-	mov    rax, 60
-    mov    rdi, 0
+exit:
+    call canonical_on
+    mov rax, 60        ; sys_exit
+    mov rdi, 0         ; Código de salida 0
     syscall
 
 
