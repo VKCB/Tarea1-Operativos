@@ -10,20 +10,17 @@ default rel
 	sys_time:	equ 201
 	sys_fcntl:	equ 72
 
-	char_equal: equ 61 
-	char_aster: equ 42
-	char_may: equ 62  
-	char_men: equ 60 
-	char_dosp: equ 58
-	char_comillas: equ 176
-	char_comilla: equ 39 
+	char_player1: equ 176
+	char_player2: equ 74 ; Letra que identifica al Jugador 2
+	char_bot: equ 98 ; Letra que identifica al bot1 blue
+
 	char_space: equ 32 
 	left_direction: equ -1
 	right_direction: equ 1
 	up_direction: equ 2
 	down_direction: equ 3
-	char_bot: equ 98 ; Letra que identifica al bot1 blue
-	char_player2: equ 74 ; Letra que identifica al Jugador 2
+	
+	
 
 
 
@@ -183,8 +180,8 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 	%macro marcador_j1 0			;Crea una línea completa de 'O' seguida de una nueva línea marcadores
 		db "X PLAYER 1 TURNS: "
 		times 60 db " "
-		db "Time:"
-		times 26 db " "
+		db "Tiempo restante:"
+		times 16 db " "
 		db "X"
 		db 0x0a, 0xD
 	%endmacro
@@ -230,13 +227,9 @@ global _start
 
 section .bss
 
-	buffer resb 5  ; Buffer para almacenar los dígitos convertidos
-
 	input_char resq 1 
 
-	temp_char resb 1
 	random_value resb 1 ; Número random obtenido (renombrado para evitar conflicto)
-	random2_value resb 1 ; Número random adicional (renombrado para evitar conflicto)
 	start_time resq 1  ; Variable para almacenar el tiempo inicial
 	current_time resq 1 ; Variable para almacenar el tiempo actual
 
@@ -254,10 +247,10 @@ section .data
 	score dq 0
 	score_position dq board + 19 + 10* (column_cells + 2)
 
-		time_msg db "Tiempo restante: ", 0
-		time_msg_length equ $-time_msg
-		time_buffer db "00", 0  ; Buffer para mostrar los segundos restantes como texto
-		time_buffer_length equ $-time_buffer
+	tiempo_posicion dq board + 95 + ((column_cells + 2) * 1)
+
+	time_buffer db "00", 0  ; Buffer para mostrar los segundos restantes como texto
+	time_buffer_length equ $-time_buffer
 
 	board:
 		full_line
@@ -307,21 +300,12 @@ section .data
 		CC_C:			equ 18
 
 
-	pallet_position dq board + 85 + ((column_cells + 2) * 10) ; El 1 es el movimiento horizontal y  en ((column_cells + 2) * 12) el 12 es el movimiento vertical 
-	pallet_size dq 3
+	player1_position dq board + 3 + ((column_cells + 2) * 11)  ; El 1 es el movimiento horizontal y  en ((column_cells + 2) * 12) el 12 es el movimiento vertical 
+	player_size dq 1
 
 	bot_position dq board + 85 + ((column_cells + 3) * 10) ; El 1 es el movimiento horizontal y  en ((column_cells + 2) * 12) el 12 es el movimiento vertical
-	player2_position dq board + 82 + ((column_cells + 2) * 10) ; Posición inicial del Jugador 2
-	pared1_x_pos: dq 30 ;0-59
-	pared1_y_pos: dq 1
-	pared2_x_pos: dq 80 ;0-59
-	pared2_y_pos: dq 1
-		colen: dq 21
-		colj: dq 0
-		cole: dq 0
-		pared: dq 21
-		colplayer: dq 0 
-
+	player2_position dq board + 6 + ((column_cells + 2) * 11) ; Posición inicial del Jugador 2
+	colj: dq 0
 
 section .text
 ;;;;;;;;;;;;;;;;;;;;for the working of the terminal;;;;;;;;;;;;;;;;;
@@ -408,28 +392,53 @@ write_stdin_termios:								;Escribe los atributos del terminal utilizando la ll
         pop rax
         ret
 
-;;;;;;;;;;;;;;;;;;;;end for the working of the terminal;;;;;;;;;;;;
+; Function: mostrar_tiempo
+; Esta funcion lo que hace es posicionar el tiempo en las coordenadas dadas y actualizarlo
+; Arguments: tiempo_posicion, time_buffer
+; Return;
+;	void
+mostrar_tiempo:
+    push rax
+    push rcx
+    push rdx
+    push rdi
+    push rsi
 
-; Function: print_pallet
-; This function moves the pallet in the game
-; Arguments: none
+    mov r12, [tiempo_posicion] 
+    mov rax, [time_buffer] ; Obtener el tiempo guardado 
+
+    mov [r12], rax ; Guardar el dígito en pantalla
+    dec r12       ; Mover el puntero a la izquierda
+
+    pop rax
+    pop rcx
+    pop rdx
+    pop rdi
+    pop rsi
+
+    ret
+
+
+; Function: print_player1
+; Esta funcion se encarga de mostrar el jugador 1 en la posicion indicada, junto con el caracter que va a representar al jugador
+; Arguments: player1_position, char_player1
 ;
 ; Return;
 ;	void
-print_pallet:
+print_player1:
   
-	mov r8, [pallet_position] 
-	.write_pallet:
-		mov byte [r8], char_comillas
+	mov r8, [player1_position] 
+	.write_player:
+		mov byte [r8], char_player1
 	ret
 
-; Function: move_pallet
+; Function: move_player1
 ; Mueve al Jugador 1 en la direccion especificada
 ; Argumentos:
 ;   rdi: direccion (up_direction, down_direction, left_direction, right_direction)
 ; Return:
 ;	void
-move_pallet:
+move_player1:
 
 	push rax
 	push rcx
@@ -451,7 +460,7 @@ move_pallet:
 	je .move_left
 
 	.move_up:
-		mov r8, [pallet_position]
+		mov r8, [player1_position]
 
 		; INICIO DE COMPARACIONES PARA LAS COLISIONES
 		cmp r8, board + 109 + ((column_cells + 2) * 4)
@@ -551,10 +560,10 @@ move_pallet:
 		jmp .continuar    
 
 		.fuera_rango:
-			mov r9, [pallet_size]
+			mov r9, [player_size]
 			mov byte [r8], char_space	; Limpiar último carácter del palet
 			sub r8, 112						; Mover una fila arriba (restar 320)
-			mov [pallet_position], r8			; Actualizar posición
+			mov [player1_position], r8			; Actualizar posición
 
 		jmp .endp
 
@@ -563,7 +572,7 @@ move_pallet:
 
 	.move_down:
 
-		mov r8, [pallet_position]
+		mov r8, [player1_position]
 
 		cmp r8, board + 86 + ((column_cells + 2) * 10)  
 		je .endp
@@ -665,10 +674,10 @@ move_pallet:
 		jmp .continuar    
 
 		.fuera_rango_down:
-			mov r9, [pallet_size]
+			mov r9, [player_size]
 			mov byte [r8], char_space	; Limpiar último carácter del palet
 			add r8, 112							; Mover una fila abajo (sumar 320)
-			mov [pallet_position], r8			; Actualizar posición
+			mov [player1_position], r8			; Actualizar posición
 
 
 		jmp .endp	
@@ -677,17 +686,13 @@ move_pallet:
 			jmp .endp
 
 
-
-		
-		
-
 	.move_left:
 
 		mov r13, [colj]
 		cmp r13, 1
 		je .endp
 
-		mov r8, [pallet_position]
+		mov r8, [player1_position]
 
 		; INICIO DE COMPARACIONES PARA LAS COLISIONES
 		cmp r8, board + 1 + ((column_cells + 2) * 4)
@@ -779,10 +784,10 @@ move_pallet:
 		cmp r8, board + 100 + ((column_cells + 2) * 17)
 		je .endp
 
-		mov r9, [pallet_size]
+		mov r9, [player_size]
 		mov byte [r8], char_space	; Limpiar el último carácter del palet
 		dec r8								; Mover la posición del palet una unidad a la izquierda
-		mov [pallet_position], r8			; Actualizar la posición del palet en la memoria
+		mov [player1_position], r8			; Actualizar la posición del palet en la memoria
 
 		jmp .endp	
 							 
@@ -792,7 +797,7 @@ move_pallet:
 		cmp r13, 2
 		je .endp
 
-		mov r8, [pallet_position]
+		mov r8, [player1_position]
 
 		
 		cmp r8, board + 108 + ((column_cells + 2) * 4)
@@ -848,7 +853,7 @@ move_pallet:
 
 		mov byte [r8], char_space
 		inc r8
-		mov [pallet_position], r8
+		mov [player1_position], r8
  
 
 
@@ -1014,7 +1019,7 @@ move_bot:
 ; Imprime al Jugador 2 en su posición actual
 print_player2:
 	mov r11, [player2_position] 
-	.write_pallet:
+	.write_player:
 		mov byte [r11], char_player2	 
 	ret
 
@@ -1143,7 +1148,7 @@ move_player2:
 		jmp .continuar    
 
 		.fuera_rango:
-			mov r9, [pallet_size]
+			mov r9, [player_size]
 			mov byte [r10], char_space	; Limpiar último carácter del palet
 			sub r10, 112						; Mover una fila arriba (restar 320)
 			mov [player2_position], r10			; Actualizar posición
@@ -1257,7 +1262,7 @@ move_player2:
 		jmp .continuar    
 
 		.fuera_rango_down:
-			mov r9, [pallet_size]
+			mov r9, [player_size]
 			mov byte [r10], char_space	; Limpiar último carácter del palet
 			add r10, 112							; Mover una fila abajo (sumar 320)
 			mov [player2_position], r10			; Actualizar posición
@@ -1268,10 +1273,6 @@ move_player2:
 		.continuar_down:
 			jmp .endp
 
-
-
-		
-		
 
 	.move_left:
 
@@ -1371,7 +1372,7 @@ move_player2:
 		cmp r10, board + 100 + ((column_cells + 2) * 17)
 		je .endp
 
-		mov r9, [pallet_size]
+		mov r9, [player_size]
 		mov byte [r10], char_space	; Limpiar el último carácter del palet
 		dec r10								; Mover la posición del palet una unidad a la izquierda
 		mov [player2_position], r10			; Actualizar la posición del palet en la memoria
@@ -1461,7 +1462,6 @@ _start:
 
 	print clear, clear_length
 	call start_screen
-	level_up:
 	call canonical_off
 	call echo_off
 	call set_bot_speed
@@ -1494,8 +1494,8 @@ _start:
 
     ; Mostrar el tiempo restante en pantalla
     print clear, clear_length
-    print time_msg, time_msg_length
-    print time_buffer, time_buffer_length
+
+	call mostrar_tiempo
 
     ; Incrementar el contador del bot
     mov rax, [bot_counter]       ; Cargar el valor actual del contador
@@ -1516,7 +1516,7 @@ _start:
 	.skip_bot_move:
 
 
-    call print_pallet
+    call print_player1
     call print_bot ; llamada a función de imprimir bots
     call print_player2 ; Imprimir Jugador 2
     print board, board_size
@@ -1562,22 +1562,22 @@ _start:
 
     .move_player1_up:
         mov rdi, up_direction
-        call move_pallet
+        call move_player1
         jmp .done
 
     .move_player1_down:
         mov rdi, down_direction
-        call move_pallet
+        call move_player1
         jmp .done
 
     .move_player1_left:
         mov rdi, left_direction
-        call move_pallet
+        call move_player1
         jmp .done
 
     .move_player1_right:
         mov rdi, right_direction
-        call move_pallet
+        call move_player1
         jmp .done
 
     .move_player2_up:
