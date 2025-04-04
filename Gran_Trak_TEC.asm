@@ -230,33 +230,35 @@ global _start
 section .bss
 
 	buffer resb 5  ; Buffer para almacenar los dígitos convertidos
-	input_char: resq 1 
+
+	input_char resq 1 
+
 	temp_char resb 1
-	random resb 1 ;Numero random obtenido
-	random_result resq 1
-	random2 resb 1
-<<<<<<< Updated upstream
-	bot_speed resq 1
-	bot_counter resq 1  ; Contador para controlar la frecuencia de movimiento del bot en ciclos
-
-section .data 
-
-	urandom db '/dev/urandom', 0 ; Ruta al archivo /dev/urandom
-=======
+	random_value resb 1 ; Número random obtenido (renombrado para evitar conflicto)
+	random2_value resb 1 ; Número random adicional (renombrado para evitar conflicto)
 	start_time resq 1  ; Variable para almacenar el tiempo inicial
 	current_time resq 1 ; Variable para almacenar el tiempo actual
 
+	; Bots
+	bot_random resb 1 ; Número random obtenido para el bot (renombrado)
+ 	random_result resq 1
+  	bot_speed resq 1
+  	bot_counter resq 1
 section .data 
 
 	player2_position dq board + 85 + ((column_cells + 2) * 15) ; Posición inicial del Jugador 2
 	char_player2 db 'J' ; Letra que identifica al Jugador 2
 
 	urandom db '/dev/urandom', 0
->>>>>>> Stashed changes
 	newline db 10, 0
 
 	score dq 0
 	score_position dq board + 19 + 10* (column_cells + 2)
+
+		time_msg db "Tiempo restante: ", 0
+		time_msg_length equ $-time_msg
+		time_buffer db "00", 0  ; Buffer para mostrar los segundos restantes como texto
+		time_buffer_length equ $-time_buffer
 
 	board:
 		full_line
@@ -321,10 +323,6 @@ section .data
 		pared: dq 21
 		colplayer: dq 0 
 
-	time_msg db "Tiempo restante: ", 0
-	time_msg_length equ $-time_msg
-	time_buffer db "00", 0  ; Buffer para mostrar los segundos restantes como texto
-	time_buffer_length equ $-time_buffer
 
 section .text
 ;;;;;;;;;;;;;;;;;;;;for the working of the terminal;;;;;;;;;;;;;;;;;
@@ -866,14 +864,19 @@ move_pallet:
 	 
 	ret
 
-; Funcion print_bot
-; Esta funcion imprime los bots en la pista en la posicion definida
+; Primera definición
 print_bot:
-	; Obtener la posición actual del bot
-    mov r10, [bot_position]      ; Cargar la dirección de la posición del bot
-    .write_pallet:
-		mov byte [r10], char_bot
-	ret
+    mov r9, [bot_position]
+    .write_pallet_bot1:
+        mov byte [r9], char_bot
+    ret
+
+; Segunda definición
+print_bot_position:
+    mov r10, [bot_position]
+    .write_pallet_bot2:
+        mov byte [r10], char_bot
+    ret
 
 ; Funcion generar un numero aleatorio entre 100 y 150 para la velocidad 
 generate_random:
@@ -885,12 +888,12 @@ generate_random:
 
     mov rax, 0                ; sys_read
     mov rdi, urandom          ; Descriptor de archivo para /dev/urandom
-    mov rsi, random           ; Direccion donde se guarda el byte aleatorio
+    mov rsi, random_value     ; Dirección donde se guarda el byte aleatorio
     mov rdx, 1                ; Leer 1 byte
     syscall                   ; Llamada al sistema para leer
 
     ; Reducir el rango del número aleatorio a 0-49
-    movzx rax, byte [random]  ; Cargar el byte aleatorio en rax
+    movzx rax, byte [random_value]  ; Cargar el byte aleatorio en rax
     xor rdx, rdx              ; Limpiar rdx para la division
     mov rcx, 50               ; Divisor (rango deseado: 50 numeros)
     div rcx                   ; rax = rax / rcx, rdx = rax % rcx
@@ -940,7 +943,6 @@ move_bot:
 
 							 
 	.move_right:
-<<<<<<< Updated upstream
 
 		mov r11, [colj]
 		cmp r11, 2
@@ -1004,15 +1006,6 @@ move_bot:
 		inc r10
 		mov [bot_position], r10
  
-=======
-		cmp r10, board + column_cells ; Verificar límite derecho
-		jge .endp
-		mov byte [r10], char_space
-		inc r10
-		mov [player2_position], r10
-		jmp .endp
-
->>>>>>> Stashed changes
 	.endp:
 		mov qword [colj], 0
 
@@ -1102,54 +1095,12 @@ _start:
 	call start_screen
 	level_up:
 	call canonical_off
-<<<<<<< Updated upstream
-	call set_bot_speed
-=======
 	call echo_off
->>>>>>> Stashed changes
+	call set_bot_speed
 
  
 	.main_loop:
-		; Incrementar el contador del bot
-    	mov rax, [bot_counter]       ; Cargar el valor actual del contador
-    	inc rax                      ; Incrementar el contador
-    	mov [bot_counter], rax       ; Guardar el nuevo valor del contador
 
-<<<<<<< Updated upstream
-    	; Comparar el contador con la velocidad del bot
-    	mov rbx, [bot_speed]         ; Cargar la velocidad del bot
-    	cmp rax, rbx                 ; Comparar el contador con la velocidad
-    	jne .skip_bot_move           ; Si no coincide, saltar el movimiento del bot
-
-    	; Restablecer el contador y mover el bot
-    	xor rax, rax                 ; Restablecer el contador a 0
-    	mov [bot_counter], rax       ; Guardar el valor restablecido
-    	mov rdi, down_direction      ; Dirección de movimiento del bot (puedes cambiarla dinámicamente)
-    	call move_bot                ; Llamar a la función para mover el bot
-
-
-	.skip_bot_move:
-    	; Continuar con el resto del bucle principal
-    	call print_pallet
-    	call print_bot
-    	print board, board_size
-
-		; Leer entrada del usuario
-    	call .read_more
-
-    	; Pausar el programa por un tiempo
-    	sleeptime
-    
-    	jmp .main_loop
-
-	.read_more:	
-		getchar						;Llama a la macro getchar para leer un carácter de la entrada de teclado 
-		
-		cmp rax, 1
-    	jne .done
-		
-		mov al,[input_char]
-=======
     ; Verificar el tiempo transcurrido
     mov rax, sys_time
     xor rdi, rdi
@@ -1162,7 +1113,6 @@ _start:
     sub rax, [current_time]
     cmp rax, 0
     jle .time_up  ; Si el tiempo restante es <= 0, salir del juego
->>>>>>> Stashed changes
 
     ; Convertir el tiempo restante a texto
     mov rbx, rax
@@ -1171,7 +1121,7 @@ _start:
     div rcx
     add dl, '0'  ; Convertir a carácter ASCII
     mov [time_buffer+1], dl
-    add al, '0'  ; Convertir a carácter ASCII
+    add al, '0'  ; Convertir a carácter ASCII  
     mov [time_buffer], al
 
     ; Mostrar el tiempo restante en pantalla
@@ -1179,7 +1129,25 @@ _start:
     print time_msg, time_msg_length
     print time_buffer, time_buffer_length
 
-    ; Resto del bucle principal...
+    ; Incrementar el contador del bot
+    mov rax, [bot_counter]       ; Cargar el valor actual del contador
+	inc rax                      ; Incrementar el contador
+	mov [bot_counter], rax       ; Guardar el nuevo valor del contador
+
+    ; Comparar el contador con la velocidad del bot
+    mov rbx, [bot_speed]         ; Cargar la velocidad del bot
+    cmp rax, rbx                 ; Comparar el contador con la velocidad
+    jne .skip_bot_move           ; Si no coincide, saltar el movimiento del bot
+
+    ; Restablecer el contador y mover el bot
+    xor rax, rax                 ; Restablecer el contador a 0
+    mov [bot_counter], rax       ; Guardar el valor restablecido
+    mov rdi, down_direction      ; Dirección de movimiento del bot 
+    call move_bot                ; Llamar a la función para mover el bot
+
+	.skip_bot_move:
+
+
     call print_pallet
     call print_bot ; llamada a función de imprimir bots
     call print_player2 ; Imprimir Jugador 2
