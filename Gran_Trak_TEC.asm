@@ -12,7 +12,7 @@ default rel
 
 	char_equal: equ 61 
 	char_aster: equ 42
-	char_may: equ 62 
+	char_may: equ 62  
 	char_men: equ 60 
 	char_dosp: equ 58
 	char_comillas: equ 176
@@ -99,6 +99,8 @@ clear_length:	equ $-clear			;H: Indica reposicionamiento del cursor.
 	msg25_length:	equ $-msg25
 	msg26_length:	equ $-msg26
 
+	game_over_msg db "El juego ha finalizado", 0xA, 0xD
+	game_over_msg_length equ $-game_over_msg
 
 	; Usefull macros (Como funciones reutilizables)
  
@@ -233,12 +235,24 @@ section .bss
 	random resb 1 ;Numero random obtenido
 	random_result resq 1
 	random2 resb 1
+<<<<<<< Updated upstream
 	bot_speed resq 1
 	bot_counter resq 1  ; Contador para controlar la frecuencia de movimiento del bot en ciclos
 
 section .data 
 
 	urandom db '/dev/urandom', 0 ; Ruta al archivo /dev/urandom
+=======
+	start_time resq 1  ; Variable para almacenar el tiempo inicial
+	current_time resq 1 ; Variable para almacenar el tiempo actual
+
+section .data 
+
+	player2_position dq board + 85 + ((column_cells + 2) * 15) ; Posición inicial del Jugador 2
+	char_player2 db 'J' ; Letra que identifica al Jugador 2
+
+	urandom db '/dev/urandom', 0
+>>>>>>> Stashed changes
 	newline db 10, 0
 
 	score dq 0
@@ -307,7 +321,10 @@ section .data
 		pared: dq 21
 		colplayer: dq 0 
 
-
+	time_msg db "Tiempo restante: ", 0
+	time_msg_length equ $-time_msg
+	time_buffer db "00", 0  ; Buffer para mostrar los segundos restantes como texto
+	time_buffer_length equ $-time_buffer
 
 section .text
 ;;;;;;;;;;;;;;;;;;;;for the working of the terminal;;;;;;;;;;;;;;;;;
@@ -923,6 +940,7 @@ move_bot:
 
 							 
 	.move_right:
+<<<<<<< Updated upstream
 
 		mov r11, [colj]
 		cmp r11, 2
@@ -986,6 +1004,15 @@ move_bot:
 		inc r10
 		mov [bot_position], r10
  
+=======
+		cmp r10, board + column_cells ; Verificar límite derecho
+		jge .endp
+		mov byte [r10], char_space
+		inc r10
+		mov [player2_position], r10
+		jmp .endp
+
+>>>>>>> Stashed changes
 	.endp:
 		mov qword [colj], 0
 
@@ -994,14 +1021,92 @@ move_bot:
 	 
 	ret
 
+; Función: print_player2
+; Imprime al Jugador 2 en su posición actual
+print_player2:
+    mov rsi, player2_position  ; Cargar la dirección de player2_position en rsi
+    mov r10, [rsi]             ; Cargar el valor de player2_position en r10
+    mov al, [char_player2]     ; Cargar el valor de char_player2 en el registro AL
+    mov byte [r10], al         ; Escribir el carácter del Jugador 2 en la posición
+    ret
 
+; Función: move_player2
+; Mueve al Jugador 2 en la dirección especificada
+; Argumentos:
+;   rdi: dirección (up_direction, down_direction, left_direction, right_direction)
+move_player2:
+    push rax
+    push rcx
+
+    mov r10, [player2_position] ; Cargar la posición actual del jugador 2
+
+    cmp rdi, up_direction
+    je .move_up
+
+    cmp rdi, down_direction
+    je .move_down
+
+    cmp rdi, left_direction
+    je .move_left
+
+    cmp rdi, right_direction
+    je .move_right
+
+    jmp .endp
+
+    .move_up:
+        cmp r10, board + ((column_cells + 2) * 1) ; Verificar límite superior
+        jle .endp
+        mov byte [r10], char_space
+        sub r10, (column_cells + 2)
+        mov [player2_position], r10
+        jmp .endp
+
+    .move_down:
+        cmp r10, board + ((column_cells + 2) * 20) ; Verificar límite inferior
+        jge .endp
+        mov byte [r10], char_space
+        add r10, (column_cells + 2)
+        mov [player2_position], r10
+        jmp .endp
+
+    .move_left:
+        cmp r10, board + 1 ; Verificar límite izquierdo
+        jle .endp
+        mov byte [r10], char_space
+        dec r10
+        mov [player2_position], r10
+        jmp .endp
+
+    .move_right:
+        cmp r10, board + column_cells ; Verificar límite derecho
+        jge .endp
+        mov byte [r10], char_space
+        inc r10
+        mov [player2_position], r10
+        jmp .endp
+
+    .endp:
+        pop rcx
+        pop rax
+        ret
 
 _start: 
+    ; Obtener el tiempo inicial
+    mov rax, sys_time
+    xor rdi, rdi  ; Argumento nulo para sys_time
+    syscall
+    mov [start_time], rax  ; Guardar el tiempo inicial
+
 	print clear, clear_length
 	call start_screen
 	level_up:
 	call canonical_off
+<<<<<<< Updated upstream
 	call set_bot_speed
+=======
+	call echo_off
+>>>>>>> Stashed changes
 
  
 	.main_loop:
@@ -1010,6 +1115,7 @@ _start:
     	inc rax                      ; Incrementar el contador
     	mov [bot_counter], rax       ; Guardar el nuevo valor del contador
 
+<<<<<<< Updated upstream
     	; Comparar el contador con la velocidad del bot
     	mov rbx, [bot_speed]         ; Cargar la velocidad del bot
     	cmp rax, rbx                 ; Comparar el contador con la velocidad
@@ -1043,47 +1149,136 @@ _start:
     	jne .done
 		
 		mov al,[input_char]
+=======
+    ; Verificar el tiempo transcurrido
+    mov rax, sys_time
+    xor rdi, rdi
+    syscall
+    mov [current_time], rax  ; Guardar el tiempo actual
 
-		.up_in:
-			cmp al, 'w'
-			jne .down_in
-			mov rdi, up_direction
-			call move_pallet
-			jmp .done
+    ; Calcular el tiempo restante
+    mov rax, [start_time]
+    add rax, 60  ; Tiempo límite (60 segundos)
+    sub rax, [current_time]
+    cmp rax, 0
+    jle .time_up  ; Si el tiempo restante es <= 0, salir del juego
+>>>>>>> Stashed changes
 
-		.down_in:
-			cmp al, 's'
-			jne .left_in
-			mov rdi, down_direction
-			call move_pallet
-			jmp .done
+    ; Convertir el tiempo restante a texto
+    mov rbx, rax
+    mov rcx, 10
+    xor rdx, rdx
+    div rcx
+    add dl, '0'  ; Convertir a carácter ASCII
+    mov [time_buffer+1], dl
+    add al, '0'  ; Convertir a carácter ASCII
+    mov [time_buffer], al
 
-		.left_in:
-			cmp al, 'a'
-			jne .right_in
-			mov rdi, left_direction
-			call move_pallet
-			jmp .done
-		
-		.right_in:
-		 	cmp al, 'd'
-	    	jne .go_out
-			mov rdi, right_direction
-			call move_pallet
-    		jmp .done	
+    ; Mostrar el tiempo restante en pantalla
+    print clear, clear_length
+    print time_msg, time_msg_length
+    print time_buffer, time_buffer_length
 
-		.go_out:
+    ; Resto del bucle principal...
+    call print_pallet
+    call print_bot ; llamada a función de imprimir bots
+    call print_player2 ; Imprimir Jugador 2
+    print board, board_size
 
-    		cmp al, 'q'
-    		je exit
+    ;setnonblocking
+.read_more:
+    getchar  ; Leer un carácter de la entrada de teclado
 
-			jmp .read_more
-		
-		.done:	
-			;unsetnonblocking		
-			sleeptime	
-			print clear, clear_length
-    		jmp .main_loop 
+    cmp rax, 1
+    jne .done
+
+    mov al, [input_char]
+
+    ; Movimiento del Jugador 1
+    cmp al, 'w'
+    je .move_player1_up
+    cmp al, 's'
+    je .move_player1_down
+    cmp al, 'a'
+    je .move_player1_left
+    cmp al, 'd'
+    je .move_player1_right
+
+    ; Movimiento del Jugador 2 (Flechas)
+    cmp al, 0x1B          ; Verificar si es la tecla Escape
+    jne .go_out
+    getchar               ; Leer el siguiente carácter
+    mov al, [input_char]  ; Almacenar el carácter leído en al
+    cmp al, '['           ; Verificar si es '['
+    jne .go_out
+    getchar               ; Leer el siguiente carácter
+    mov al, [input_char]  ; Almacenar el carácter leído en al
+    cmp al, 'A'           ; Flecha hacia arriba
+    je .move_player2_up
+    cmp al, 'B'           ; Flecha hacia abajo
+    je .move_player2_down
+    cmp al, 'C'           ; Flecha hacia la derecha
+    je .move_player2_right
+    cmp al, 'D'           ; Flecha hacia la izquierda
+    je .move_player2_left
+
+    jmp .go_out
+
+    .move_player1_up:
+        mov rdi, up_direction
+        call move_pallet
+        jmp .done
+
+    .move_player1_down:
+        mov rdi, down_direction
+        call move_pallet
+        jmp .done
+
+    .move_player1_left:
+        mov rdi, left_direction
+        call move_pallet
+        jmp .done
+
+    .move_player1_right:
+        mov rdi, right_direction
+        call move_pallet
+        jmp .done
+
+    .move_player2_up:
+        mov rdi, up_direction
+        call move_player2
+        jmp .done
+
+    .move_player2_down:
+        mov rdi, down_direction
+        call move_player2
+        jmp .done
+
+    .move_player2_left:
+        mov rdi, left_direction
+        call move_player2
+        jmp .done
+
+    .move_player2_right:
+        mov rdi, right_direction
+        call move_player2
+        jmp .done
+
+    .go_out:
+        cmp al, 'q'
+        je exit
+
+        jmp .read_more
+
+    .done:
+        sleeptime
+        jmp .main_loop
+
+	.time_up:
+		; Mostrar mensaje de fin de juego
+		print clear, clear_length
+		print game_over_msg, game_over_msg_length
+		jmp exit
 
 		print clear, clear_length
 		
@@ -1116,5 +1311,3 @@ exit:
 	mov    rax, 60
     mov    rdi, 0
     syscall
-
-
